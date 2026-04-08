@@ -1,29 +1,29 @@
 "use client";
 
-import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 export default function CustomGPTWidget() {
-  const initialized = useRef(false);
+  useEffect(() => {
+    // Remove any existing script to avoid duplicates
+    const existing = document.getElementById("customgpt-script");
+    if (existing) return;
 
-  const init = () => {
-    if (initialized.current) return;
-    // @ts-ignore
-    if (typeof window !== "undefined" && window.CustomGPT) {
-      initialized.current = true;
+    const script = document.createElement("script");
+    script.id = "customgpt-script";
+    script.src = "https://cdn.customgpt.ai/js/chat.js";
+    script.defer = true;
+    script.onload = () => {
       // @ts-ignore
-      window.CustomGPT.init({
-        p_id: "89781",
-        p_key: "b9d84bb677dee5b0447a8c72cde07dc9",
-      });
-    }
-  };
+      if (window.CustomGPT) {
+        // @ts-ignore
+        window.CustomGPT.init({
+          p_id: "89781",
+          p_key: "b9d84bb677dee5b0447a8c72cde07dc9",
+        });
+      }
+    };
+    document.body.appendChild(script);
+  }, []);
 
-  return (
-    <Script
-      src="https://cdn.customgpt.ai/js/chat.js"
-      strategy="afterInteractive"
-      onLoad={init}
-    />
-  );
+  return null;
 }
