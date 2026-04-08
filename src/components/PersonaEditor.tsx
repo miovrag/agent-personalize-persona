@@ -68,10 +68,10 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
 
   const saveLabel =
     saveState === "saving"
-      ? "Saving..."
+      ? "Publishing..."
       : saveState === "saved"
-      ? "Saved ✓"
-      : "Save Changes";
+      ? "Published ✓"
+      : "Publish";
 
   const saveBg =
     saveState === "saved"
