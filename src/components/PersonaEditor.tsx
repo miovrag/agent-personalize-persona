@@ -201,13 +201,6 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
 
         {/* Right: Preview */}
         <div className="w-[420px] shrink-0 p-6 border-l border-gray-200 bg-[#F5F5F5] flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-gray-500 ">Live Preview</p>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-              Updates as you edit
-            </div>
-          </div>
           <div className="flex-1">
             <LivePreview
               agentName={state.agentName}
