@@ -39,10 +39,10 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
               disabled={isDisabled}
               className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all select-none
                 ${isSelected
-                  ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                  ? "bg-gray-900 text-white border-gray-900 shadow-sm"
                   : isDisabled
                   ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50"
                 }`}
             >
               {style}
