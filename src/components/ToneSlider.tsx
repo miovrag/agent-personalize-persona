@@ -33,25 +33,28 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
 
       <div className="space-y-1">
         <div className="relative">
-          {/* Fixed full-width gradient track */}
-          <div className="absolute inset-x-[9px] top-[8px] h-[6px] rounded-full overflow-hidden pointer-events-none">
-            <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #3b82f6, #a855f7, #f97316)' }} />
-            {/* Gray mask slides from right to reveal gradient */}
-            <div
-              className="absolute top-0 right-0 h-full bg-gray-200 transition-none rounded-r-full"
-              style={{ width: `${100 - value}%` }}
+          {/* Track wrapper — matches thumb height so we can center the track */}
+          <div className="relative h-5 flex items-center">
+            {/* Fixed full-width gradient track */}
+            <div className="absolute inset-x-[10px] h-[6px] rounded-full overflow-hidden pointer-events-none">
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #3b82f6, #a855f7, #f97316)' }} />
+              {/* Gray mask slides from right */}
+              <div
+                className="absolute top-0 right-0 h-full bg-gray-200"
+                style={{ width: `${100 - value}%` }}
+              />
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={value}
+              onChange={(e) => onChange(Number(e.target.value))}
+              style={{ background: 'transparent' }}
+              className="absolute inset-0 w-full"
+              aria-label="Tone slider: Formal to Conversational"
             />
           </div>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            style={{ background: 'transparent' }}
-            className="w-full relative"
-            aria-label="Tone slider: Formal to Conversational"
-          />
           {/* Tick marks */}
           <div className="flex justify-between px-[9px] mt-1">
             {Array.from({ length: 11 }).map((_, i) => {
