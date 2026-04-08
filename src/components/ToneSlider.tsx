@@ -6,8 +6,8 @@ interface ToneSliderProps {
 }
 
 const TONE_LABELS = [
-  { min: 0, max: 20, label: "Very formal", color: "text-blue-700" },
-  { min: 20, max: 40, label: "Professional", color: "text-blue-600" },
+  { min: 0, max: 20, label: "Very formal", color: "text-emerald-700" },
+  { min: 20, max: 40, label: "Professional", color: "text-emerald-600" },
   { min: 40, max: 60, label: "Balanced", color: "text-violet-600" },
   { min: 60, max: 80, label: "Friendly", color: "text-orange-500" },
   { min: 80, max: 101, label: "Casual", color: "text-orange-600" },
@@ -22,7 +22,7 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
   const percent = value / 100;
 
   // Gradient track background
-  const trackBg = `linear-gradient(to right, #3b82f6 0%, #7c3aed ${value}%, #e5e7eb ${value}%, #e5e7eb 100%)`;
+  const trackBg = `linear-gradient(to right, #10b981 0%, #7c3aed ${value}%, #e5e7eb ${value}%, #e5e7eb 100%)`;
 
   return (
     <div className="space-y-3">
