@@ -131,7 +131,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       {/* Main split layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Controls */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[600px]">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[600px] bg-[#F5F5F5]">
           {/* Section header */}
           <div className="flex items-center gap-2">
             <span className="text-gray-400">✦</span>
@@ -198,7 +198,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         </div>
 
         {/* Right: Preview */}
-        <div className="w-[420px] shrink-0 p-6 border-l border-gray-200 bg-gray-50 flex flex-col">
+        <div className="w-[420px] shrink-0 p-6 border-l border-gray-200 bg-[#F5F5F5] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-semibold text-gray-500 ">Live Preview</p>
             <div className="flex items-center gap-1 text-xs text-gray-400">
