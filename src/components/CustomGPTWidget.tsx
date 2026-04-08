@@ -27,6 +27,6 @@ export default function CustomGPTWidget({ reloadKey }: Props) {
   }, [reloadKey]);
 
   return (
-    <div id="customgpt_chat" className="w-full rounded-2xl overflow-hidden" style={{ height: "100%" }} />
+    <div id="customgpt_chat" className="w-full overflow-hidden" style={{ height: "100%" }} />
   );
 }

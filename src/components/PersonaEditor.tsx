@@ -233,7 +233,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
                "Live agent"}
             </span>
           </div>
-          <div className="flex-1 px-4 pb-4 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <CustomGPTWidget reloadKey={widgetKey} />
           </div>
         </div>
