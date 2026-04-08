@@ -81,7 +81,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <div>
           <h1 className="heading-h5 mb-1">
             Personalize · {state.agentName}
@@ -113,7 +113,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0 border-b border-gray-200 bg-white px-6 overflow-x-auto">
+      <div className="flex gap-0 border-b border-gray-200 px-6 overflow-x-auto">
         {["General", "Persona", "Conversation", "Citations", "Intelligence", "Advanced", "Security"].map((tab) => (
           <button
             key={tab}
