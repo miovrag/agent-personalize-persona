@@ -141,55 +141,28 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           {/* Completion score */}
           <CompletionScore score={score} />
 
-          {/* Divider */}
-          <div className="border-t border-gray-100" />
-
-          {/* 1. Role */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">1</span>
-              <span className="text-xs font-semibold text-gray-500 ">Identity</span>
-            </div>
+          {/* 1. Identity */}
+          <Section number={1} label="Identity">
             <RoleField value={state.role} onChange={(role) => updateState({ role })} />
-          </div>
+          </Section>
 
-          <div className="border-t border-gray-100" />
-
-          {/* 2. Tone */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">2</span>
-              <span className="text-xs font-semibold text-gray-500 ">Personality</span>
-            </div>
+          {/* 2. Personality */}
+          <Section number={2} label="Personality">
             <div className="space-y-5">
               <ToneSlider value={state.tone} onChange={(tone) => updateState({ tone })} />
               <StyleChips selected={state.styles} onChange={(styles) => updateState({ styles })} />
             </div>
-          </div>
+          </Section>
 
-          <div className="border-t border-gray-100" />
-
-          {/* 3. Guardrails */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">3</span>
-              <span className="text-xs font-semibold text-gray-500 ">Behavior Rules</span>
-            </div>
+          {/* 3. Behavior Rules */}
+          <Section number={3} label="Behavior Rules">
             <GuardrailTags selected={state.guardrails} onChange={(guardrails) => updateState({ guardrails })} />
-          </div>
+          </Section>
 
-          <div className="border-t border-gray-100" />
-
-          {/* 4. Outcomes */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">4</span>
-              <span className="text-xs font-semibold text-gray-500 ">Workflow Outcomes</span>
-            </div>
+          {/* 4. Workflow Outcomes */}
+          <Section number={4} label="Workflow Outcomes">
             <OutcomeCards selected={state.outcomes} onChange={(outcomes) => updateState({ outcomes })} />
-          </div>
-
-          <div className="border-t border-gray-100" />
+          </Section>
 
           {/* Advanced */}
           <AdvancedToggle
@@ -250,6 +223,28 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Section({
+  number,
+  label,
+  children,
+}: {
+  number: number;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+        <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center shrink-0">
+          {number}
+        </span>
+        <span className="text-sm font-semibold text-gray-700">{label}</span>
+      </div>
+      <div className="px-5 py-4">{children}</div>
     </div>
   );
 }
