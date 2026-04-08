@@ -56,7 +56,7 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
               return (
                 <div
                   key={i}
-                  className={`rounded-full transition-colors ${isMajor ? "w-[2px] h-[6px]" : "w-[1.5px] h-[4px]"} ${isActive ? "bg-[#22A95E]" : "bg-gray-300"}`}
+                  className={`rounded-full transition-colors ${isMajor ? "w-[2px] h-[6px]" : "w-[1.5px] h-[4px]"} ${isActive ? "bg-[#1E9553]" : "bg-gray-300"}`}
                 />
               );
             })}
