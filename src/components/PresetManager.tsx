@@ -123,7 +123,7 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
 
           {/* Save new preset */}
           <div className="p-4 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Save current as preset</p>
+            <p className="text-xs font-semibold text-gray-500  mb-3">Save current as preset</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -151,7 +151,7 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
               </div>
             ) : (
               <>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 pt-3 pb-2">
+                <p className="text-xs font-semibold text-gray-400  px-4 pt-3 pb-2">
                   Saved presets
                 </p>
                 {presets.map((preset) => (

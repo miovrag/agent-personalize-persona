@@ -148,7 +148,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">1</span>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Identity</span>
+              <span className="text-xs font-semibold text-gray-500 ">Identity</span>
             </div>
             <RoleField value={state.role} onChange={(role) => updateState({ role })} />
           </div>
@@ -159,7 +159,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">2</span>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Personality</span>
+              <span className="text-xs font-semibold text-gray-500 ">Personality</span>
             </div>
             <div className="space-y-5">
               <ToneSlider value={state.tone} onChange={(tone) => updateState({ tone })} />
@@ -173,7 +173,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">3</span>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Behavior Rules</span>
+              <span className="text-xs font-semibold text-gray-500 ">Behavior Rules</span>
             </div>
             <GuardrailTags selected={state.guardrails} onChange={(guardrails) => updateState({ guardrails })} />
           </div>
@@ -184,7 +184,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center">4</span>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workflow Outcomes</span>
+              <span className="text-xs font-semibold text-gray-500 ">Workflow Outcomes</span>
             </div>
             <OutcomeCards selected={state.outcomes} onChange={(outcomes) => updateState({ outcomes })} />
           </div>
@@ -227,7 +227,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         {/* Right: Preview */}
         <div className="w-[420px] shrink-0 p-6 border-l border-gray-200 bg-gray-50 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Live Preview</p>
+            <p className="text-xs font-semibold text-gray-500 ">Live Preview</p>
             <div className="flex items-center gap-1 text-xs text-gray-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
               Updates as you edit
