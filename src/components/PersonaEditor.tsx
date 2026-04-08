@@ -102,8 +102,10 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
             disabled={saveState === "saving"}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${saveBg} disabled:opacity-70`}
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M11.5 2L5.5 10L2.5 7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C12 2 7 6 7 12H10L9 16L12 14L15 16L14 12H17C17 6 12 2 12 2Z" fill="white"/>
+              <circle cx="12" cy="9" r="1.5" fill="currentColor" opacity="0.4"/>
+              <path d="M9 16C9 17.5 10 19 12 20C14 19 15 17.5 15 16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             {saveLabel}
           </button>
