@@ -30,9 +30,11 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   const [hasCustomEdit, setHasCustomEdit] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isDirty, setIsDirty] = useState(false);
+  const [widgetKey, setWidgetKey] = useState(0);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Regenerate instruction when state changes (unless user manually edited)
+  // Regenerate instruction + debounce-sync to live agent
   useEffect(() => {
     if (!hasCustomEdit) {
       const generated = generateInstruction(state);
@@ -40,6 +42,27 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
     }
     setIsDirty(true);
   }, [state]);
+
+  // Debounce: push instruction to CustomGPT API 1.5s after last change
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSyncStatus("syncing");
+      try {
+        await fetch("/api/update-persona", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ persona_instructions: instruction }),
+        });
+        setSyncStatus("synced");
+        setWidgetKey((k) => k + 1); // reload widget with updated persona
+        setTimeout(() => setSyncStatus("idle"), 2000);
+      } catch {
+        setSyncStatus("idle");
+      }
+    }, 1500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [instruction]);
 
   const updateState = useCallback((patch: Partial<PersonaState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -197,8 +220,22 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         </div>
 
         {/* Right: Live agent preview */}
-        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col p-4">
-          <CustomGPTWidget />
+        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col">
+          {/* Sync indicator */}
+          <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${
+              syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
+              syncStatus === "synced" ? "bg-emerald-400" : "bg-gray-300"
+            }`} />
+            <span className="text-xs text-gray-400">
+              {syncStatus === "syncing" ? "Applying changes to agent..." :
+               syncStatus === "synced" ? "Agent updated — chat reloaded" :
+               "Live agent"}
+            </span>
+          </div>
+          <div className="flex-1 px-4 pb-4">
+            <CustomGPTWidget reloadKey={widgetKey} />
+          </div>
         </div>
       </div>
     </div>
