@@ -197,14 +197,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         </div>
 
         {/* Right: Live agent preview */}
-        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col items-center justify-center gap-3 p-6">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-            <p className="text-sm font-medium text-gray-500">Live agent</p>
-          </div>
-          <p className="text-xs text-gray-400 text-center max-w-[240px]">
-            The real agent is embedded — click the chat button to interact with it
-          </p>
+        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col p-4">
           <CustomGPTWidget />
         </div>
       </div>

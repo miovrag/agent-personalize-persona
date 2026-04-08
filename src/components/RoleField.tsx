@@ -23,7 +23,7 @@ export default function RoleField({ value, onChange }: RoleFieldProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-[#2F3D39]">
+        <label htmlFor="agent-role" className="text-sm font-semibold text-[#2F3D39]">
           What does this agent do?
         </label>
         {value.trim().length > 0 && (
@@ -35,6 +35,8 @@ export default function RoleField({ value, onChange }: RoleFieldProps) {
 
       <div className="relative">
         <textarea
+          id="agent-role"
+          name="agent-role"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => {

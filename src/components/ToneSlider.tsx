@@ -23,7 +23,7 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-[#2F3D39]">
+        <label htmlFor="agent-tone" className="text-sm font-semibold text-[#2F3D39]">
           How should it sound?
         </label>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 ${current.color}`}>
@@ -51,6 +51,8 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
               value={value}
               onChange={(e) => onChange(Number(e.target.value))}
               style={{ background: 'transparent' }}
+              id="agent-tone"
+              name="agent-tone"
               className="absolute inset-0 w-full"
               aria-label="Tone slider: Formal to Conversational"
             />

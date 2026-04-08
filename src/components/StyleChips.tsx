@@ -19,7 +19,7 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-[#2F3D39]">
+        <label id="style-chips-label" className="text-sm font-semibold text-[#2F3D39]">
           Communication qualities
         </label>
         <span className="text-xs text-gray-400">
@@ -27,7 +27,7 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-labelledby="style-chips-label">
         {STYLE_OPTIONS.map((style) => {
           const isSelected = selected.includes(style);
           const isDisabled = !isSelected && selected.length >= 3;
