@@ -6,14 +6,8 @@ export default function Sidebar() {
 
       {/* Logo row */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4">
-        <div className="flex items-center gap-2.5">
-          {/* Snowflake/crystal icon */}
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="14" fill="#EEF2FF"/>
-            <path d="M14 7v14M7 14h14M9.5 9.5l9 9M18.5 9.5l-9 9" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round"/>
-            <circle cx="14" cy="14" r="2.5" fill="#7c3aed"/>
-          </svg>
-          <span className="text-[15px] font-bold text-gray-900 tracking-tight">CustomGPT.ai</span>
+        <div className="flex items-center">
+          <img src="/customgpt-logo.svg" alt="CustomGPT.ai" height={23} className="h-[23px] w-auto" />
         </div>
         {/* Layout toggle */}
         <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded">
