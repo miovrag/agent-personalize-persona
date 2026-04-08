@@ -19,10 +19,6 @@ function getToneLabel(value: number) {
 
 export default function ToneSlider({ value, onChange }: ToneSliderProps) {
   const current = getToneLabel(value);
-  const percent = value / 100;
-
-  // Gradient track background
-  const trackBg = `linear-gradient(to right, #3b82f6 0%, #f97316 ${value}%, #e5e7eb ${value}%, #e5e7eb 100%)`;
 
   return (
     <div className="space-y-3">
@@ -37,14 +33,23 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
 
       <div className="space-y-1">
         <div className="relative">
+          {/* Fixed full-width gradient track */}
+          <div className="absolute inset-x-[9px] top-[8px] h-[6px] rounded-full overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right, #3b82f6, #a855f7, #f97316)' }} />
+            {/* Gray mask slides from right to reveal gradient */}
+            <div
+              className="absolute top-0 right-0 h-full bg-gray-200 transition-none rounded-r-full"
+              style={{ width: `${100 - value}%` }}
+            />
+          </div>
           <input
             type="range"
             min={0}
             max={100}
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
-            style={{ background: trackBg }}
-            className="w-full"
+            style={{ background: 'transparent' }}
+            className="w-full relative"
             aria-label="Tone slider: Formal to Conversational"
           />
           {/* Tick marks */}
