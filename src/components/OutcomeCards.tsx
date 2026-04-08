@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { OUTCOME_OPTIONS } from "./types";
 
+interface CustomOutcome {
+  id: string;
+  icon: string;
+  label: string;
+  description: string;
+}
+
 interface OutcomeCardsProps {
   selected: string[];
   onChange: (selected: string[]) => void;
@@ -10,6 +17,36 @@ interface OutcomeCardsProps {
 
 export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [customOutcomes, setCustomOutcomes] = useState<CustomOutcome[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newIcon, setNewIcon] = useState("⚡");
+
+  const ICON_OPTIONS = ["⚡", "🔔", "📤", "💬", "🔗", "🛠️", "📊", "🚀", "💡", "🎯"];
+
+  const createCustomOutcome = () => {
+    const trimmedLabel = newLabel.trim();
+    if (!trimmedLabel) return;
+    const id = `custom_${Date.now()}`;
+    const outcome: CustomOutcome = {
+      id,
+      icon: newIcon,
+      label: trimmedLabel,
+      description: newDescription.trim(),
+    };
+    setCustomOutcomes((prev) => [...prev, outcome]);
+    onChange([...selected, id]);
+    setNewLabel("");
+    setNewDescription("");
+    setNewIcon("⚡");
+    setShowCreateForm(false);
+  };
+
+  const deleteCustomOutcome = (id: string) => {
+    setCustomOutcomes((prev) => prev.filter((o) => o.id !== id));
+    onChange(selected.filter((s) => s !== id));
+  };
 
   const toggle = (id: string) => {
     if (selected.includes(id)) {
@@ -18,6 +55,8 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
       onChange([...selected, id]);
     }
   };
+
+  const allOutcomes = [...OUTCOME_OPTIONS, ...customOutcomes];
 
   return (
     <div className="space-y-2.5">
@@ -31,16 +70,17 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
           </p>
         </div>
         {selected.length > 0 && (
-          <span className="text-xs font-medium text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-medium text-violet-600 bg-violet-50 dark:bg-violet-950 dark:text-violet-300 px-2.5 py-1 rounded-full">
             {selected.length} active
           </span>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {OUTCOME_OPTIONS.map((outcome) => {
+        {allOutcomes.map((outcome) => {
           const isOn = selected.includes(outcome.id);
           const isExpanded = expanded === outcome.id;
+          const isCustom = customOutcomes.some((c) => c.id === outcome.id);
 
           return (
             <div
@@ -57,10 +97,17 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
               >
                 <span className="text-lg leading-none mt-0.5 select-none">{outcome.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold leading-tight ${isOn ? "text-violet-800 dark:text-violet-300" : "text-gray-700 dark:text-[#C8D8EE]"}`}>
-                    {outcome.label}
-                  </p>
-                  {isExpanded && (
+                  <div className="flex items-center gap-1.5">
+                    <p className={`text-xs font-semibold leading-tight ${isOn ? "text-violet-800 dark:text-violet-300" : "text-gray-700 dark:text-[#C8D8EE]"}`}>
+                      {outcome.label}
+                    </p>
+                    {isCustom && (
+                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#162238] text-gray-400 dark:text-[#7A9BBF]">
+                        custom
+                      </span>
+                    )}
+                  </div>
+                  {isExpanded && outcome.description && (
                     <p className="text-xs text-gray-500 dark:text-[#7A9BBF] mt-1 leading-relaxed">
                       {outcome.description}
                     </p>
@@ -72,13 +119,13 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
               </button>
 
               {isExpanded && (
-                <div className="px-3 pb-2.5 pt-0">
+                <div className="px-3 pb-2.5 pt-0 flex gap-2">
                   <button
                     onClick={() => {
                       toggle(outcome.id);
                       setExpanded(null);
                     }}
-                    className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors
                       ${isOn
                         ? "bg-white dark:bg-[#111D30] text-red-500 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                         : "bg-violet-600 text-white hover:bg-violet-700"
@@ -86,12 +133,98 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
                   >
                     {isOn ? "Remove" : "Enable this outcome"}
                   </button>
+                  {isCustom && (
+                    <button
+                      onClick={() => {
+                        deleteCustomOutcome(outcome.id);
+                        setExpanded(null);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-600 dark:hover:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                      title="Delete outcome"
+                    >
+                      🗑
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Create custom outcome */}
+      {showCreateForm ? (
+        <div className="border border-violet-200 dark:border-violet-800 rounded-xl p-4 space-y-3 bg-violet-50 dark:bg-violet-950">
+          <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">New custom outcome</p>
+
+          {/* Icon picker */}
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500 dark:text-[#7A9BBF]">Icon</p>
+            <div className="flex gap-1.5 flex-wrap">
+              {ICON_OPTIONS.map((icon) => (
+                <button
+                  key={icon}
+                  onClick={() => setNewIcon(icon)}
+                  className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all
+                    ${newIcon === icon
+                      ? "bg-violet-600 ring-2 ring-violet-400"
+                      : "bg-white dark:bg-[#162238] border border-gray-200 dark:border-[#1E3050] hover:border-violet-300 dark:hover:border-violet-700"
+                    }`}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500 dark:text-[#7A9BBF]">Label <span className="text-red-400">*</span></p>
+            <input
+              type="text"
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") createCustomOutcome(); if (e.key === "Escape") setShowCreateForm(false); }}
+              placeholder="e.g. Log to spreadsheet"
+              autoFocus
+              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF]"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500 dark:text-[#7A9BBF]">Description <span className="text-gray-400">(optional)</span></p>
+            <input
+              type="text"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="What does this outcome do?"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF]"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={createCustomOutcome}
+              disabled={!newLabel.trim()}
+              className="flex-1 py-2 text-xs font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Create outcome
+            </button>
+            <button
+              onClick={() => { setShowCreateForm(false); setNewLabel(""); setNewDescription(""); setNewIcon("⚡"); }}
+              className="px-4 py-2 text-xs text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
+        >
+          <span className="text-base leading-none">+</span> Create custom outcome
+        </button>
+      )}
     </div>
   );
 }
