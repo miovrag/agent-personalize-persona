@@ -12,8 +12,8 @@ export default function Sidebar() {
         {/* Layout toggle */}
         <button className="hover:opacity-70 transition-opacity p-1 rounded">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect x="4" y="4" width="16" height="16" rx="2" stroke="#2F3D39" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M9 4V20" stroke="#2F3D39" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <rect x="4" y="4" width="16" height="16" rx="2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9 4V20" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
