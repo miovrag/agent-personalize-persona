@@ -84,7 +84,9 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
         <div>
           <h1 className="text-xl font-bold text-gray-900 mb-1">
-            Personalize · {state.agentName}
+            <span className="bg-gray-100 rounded-lg px-2.5 py-1">
+              Personalize · {state.agentName}
+            </span>
           </h1>
           <p className="text-sm text-gray-400">Settings here apply to all deployment options.</p>
         </div>
