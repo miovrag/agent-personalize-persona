@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
-import { generateInstruction, generatePreviewResponse, completionScore } from "./generateInstruction";
+import { generateInstruction, completionScore } from "./generateInstruction";
 import RoleField from "./RoleField";
 import ToneSlider from "./ToneSlider";
 import StyleChips from "./StyleChips";
 import GuardrailTags from "./GuardrailTags";
 import OutcomeCards from "./OutcomeCards";
 import AdvancedToggle from "./AdvancedToggle";
-import LivePreview from "./LivePreview";
 import CompletionScore from "./CompletionScore";
 import PresetManager from "./PresetManager";
+import CustomGPTWidget from "./CustomGPTWidget";
 
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
@@ -63,7 +63,6 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
     setSaveState("idle");
   };
 
-  const previewData = generatePreviewResponse(state);
   const score = completionScore(state);
 
   const saveLabel =
@@ -197,16 +196,16 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           </div>
         </div>
 
-        {/* Right: Preview */}
-        <div className="w-[420px] shrink-0 p-6 border-l border-gray-200 bg-[#F5F5F5] flex flex-col">
-          <div className="flex-1">
-            <LivePreview
-              agentName={state.agentName}
-              previewData={previewData}
-              tone={state.tone}
-            />
+        {/* Right: Live agent preview */}
+        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col items-center justify-center gap-3 p-6">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+            <p className="text-sm font-medium text-gray-500">Live agent</p>
           </div>
-
+          <p className="text-xs text-gray-400 text-center max-w-[240px]">
+            The real agent is embedded — click the chat button to interact with it
+          </p>
+          <CustomGPTWidget />
         </div>
       </div>
     </div>
