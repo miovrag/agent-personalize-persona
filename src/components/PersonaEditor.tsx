@@ -83,7 +83,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">
+          <h1 className="heading-h5 mb-1">
             <span className="bg-gray-100 rounded-lg px-2.5 py-1">
               Personalize · {state.agentName}
             </span>
@@ -230,7 +230,7 @@ function Section({
         <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center shrink-0">
           {number}
         </span>
-        <span className="text-sm font-semibold text-gray-700">{label}</span>
+        <span className="heading-h5">{label}</span>
       </div>
       <div className="px-5 py-4">{children}</div>
     </div>
