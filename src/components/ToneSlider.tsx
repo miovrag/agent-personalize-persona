@@ -35,7 +35,7 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="relative">
           <input
             type="range"
@@ -47,9 +47,23 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
             className="w-full"
             aria-label="Tone slider: Formal to Conversational"
           />
+          {/* Tick marks */}
+          <div className="flex justify-between px-[9px] mt-1">
+            {Array.from({ length: 11 }).map((_, i) => {
+              const tickVal = i * 10;
+              const isActive = tickVal <= value;
+              const isMajor = i % 2 === 0;
+              return (
+                <div
+                  key={i}
+                  className={`rounded-full transition-colors ${isMajor ? "w-[2px] h-[6px]" : "w-[1.5px] h-[4px]"} ${isActive ? "bg-violet-500" : "bg-gray-300"}`}
+                />
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex justify-between text-xs text-gray-400 font-medium px-0.5">
+        <div className="flex justify-between text-xs text-gray-400 font-medium px-0.5 mt-1">
           <span>Formal & precise</span>
           <span>Warm & conversational</span>
         </div>
