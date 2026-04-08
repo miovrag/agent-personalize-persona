@@ -11,6 +11,7 @@ import OutcomeCards from "./OutcomeCards";
 import AdvancedToggle from "./AdvancedToggle";
 import LivePreview from "./LivePreview";
 import CompletionScore from "./CompletionScore";
+import PresetManager from "./PresetManager";
 
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
@@ -55,6 +56,13 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
     }, 800);
   };
 
+  const handleLoadPreset = (presetState: PersonaState) => {
+    setState(presetState);
+    setHasCustomEdit(false);
+    setIsDirty(true);
+    setSaveState("idle");
+  };
+
   const previewData = generatePreviewResponse(state);
   const score = completionScore(state);
 
@@ -90,6 +98,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
               Unsaved changes
             </span>
           )}
+          <PresetManager currentState={state} onLoad={handleLoadPreset} />
           <button
             onClick={handleSave}
             disabled={saveState === "saving"}
