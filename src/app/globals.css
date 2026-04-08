@@ -26,6 +26,11 @@ html.dark {
   --muted-bg: #111D30;
 }
 
+html.dark body {
+  background-color: #0B1426;
+  color: #C8D8EE;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -33,25 +38,8 @@ body {
   transition: background 0.2s ease, color 0.2s ease;
 }
 
-/* ── Dark mode overrides ─────────────────────────────── */
-html.dark .bg-white          { background-color: var(--card-bg) !important; }
-html.dark .bg-gray-50        { background-color: var(--muted-bg) !important; }
-html.dark .bg-gray-100       { background-color: #1a2840 !important; }
-html.dark .bg-\[#F5F5F5\]   { background-color: var(--background) !important; }
-html.dark .border-gray-100,
-html.dark .border-gray-200   { border-color: var(--card-border) !important; }
-html.dark .text-gray-800,
-html.dark .text-gray-700,
-html.dark .text-gray-900     { color: #C8D8EE !important; }
-html.dark .text-gray-600,
-html.dark .text-gray-500     { color: var(--muted) !important; }
-html.dark .text-gray-400,
-html.dark .text-gray-300     { color: #4a6480 !important; }
-html.dark .text-\[#2F3D39\] { color: #C8D8EE !important; }
-html.dark .text-\[#212121\] { color: #E0EAF5 !important; }
-html.dark textarea,
-html.dark input[type="text"] { background-color: var(--input-bg) !important; border-color: var(--input-border) !important; color: #C8D8EE !important; }
-html.dark .heading-h5        { color: #E0EAF5 !important; }
+/* ── Dark mode — Tailwind v4 custom variant ─────────── */
+@custom-variant dark (&:where(.dark, .dark *));
 
 .heading-h5 {
   color: var(--Typography-Color-Heading, #212121);

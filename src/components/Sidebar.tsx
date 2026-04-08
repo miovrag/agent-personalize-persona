@@ -2,7 +2,7 @@
 
 export default function Sidebar() {
   return (
-    <aside className="w-[268px] shrink-0 flex flex-col h-full border-r border-gray-200 bg-white">
+    <aside className="w-[268px] shrink-0 flex flex-col h-full border-r border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#0B1426]">
 
       {/* Logo row */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4">
@@ -94,10 +94,10 @@ export default function Sidebar() {
 
       {/* Copilot */}
       <div className="px-4 py-5">
-        <p className="text-sm font-semibold text-gray-800 mb-2.5">CustomGPT.ai Copilot</p>
-        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors">
-          <span className="text-sm text-gray-400 flex-1">I need help with...</span>
-          <button className="text-gray-400 hover:text-violet-600 transition-colors">
+        <p className="text-sm font-semibold text-gray-800 dark:text-[#C8D8EE] mb-2.5">CustomGPT.ai Copilot</p>
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#162238] hover:border-gray-300 dark:hover:border-[#1E3050] transition-colors">
+          <span className="text-sm text-gray-400 dark:text-[#7A9BBF] flex-1">I need help with...</span>
+          <button className="text-gray-400 dark:text-[#7A9BBF] hover:text-violet-600 transition-colors">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -106,27 +106,27 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-100">
+      <div className="border-t border-gray-100 dark:border-[#1E3050]">
         {/* Developers */}
-        <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+        <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-[#1E3050] transition-colors border-b border-gray-100 dark:border-[#1E3050]">
           <div className="w-9 h-9 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M4 4L1 7l3 3M10 4l3 3-3 3M8 2l-2 10" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span className="text-sm font-medium text-gray-700">Developers</span>
-          <svg className="ml-auto text-gray-400" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <span className="text-sm font-medium text-gray-700 dark:text-[#C8D8EE]">Developers</span>
+          <svg className="ml-auto text-gray-400 dark:text-[#7A9BBF]" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
         {/* My Account */}
-        <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors">
+        <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-[#1E3050] transition-colors">
           <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-violet-400 to-pink-400 shrink-0 flex items-center justify-center text-white text-xs font-bold">
             MR
           </div>
-          <span className="text-sm font-medium text-gray-700">My Account</span>
-          <svg className="ml-auto text-gray-400" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <span className="text-sm font-medium text-gray-700 dark:text-[#C8D8EE]">My Account</span>
+          <svg className="ml-auto text-gray-400 dark:text-[#7A9BBF]" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
@@ -150,9 +150,9 @@ function NavItem({
   return (
     <button
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-left
-        ${active ? "text-violet-600 font-semibold" : "text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium"}`}
+        ${active ? "text-violet-600 font-semibold" : "text-gray-600 dark:text-[#7A9BBF] hover:bg-gray-50 dark:hover:bg-[#1E3050] hover:text-gray-800 dark:hover:text-[#C8D8EE] font-medium"}`}
     >
-      <span className={active ? "text-violet-600" : "text-gray-500"}>{icon}</span>
+      <span className={active ? "text-violet-600" : "text-gray-500 dark:text-[#7A9BBF]"}>{icon}</span>
       <span className="flex-1">{label}</span>
       {badge != null && (
         <span className="min-w-[20px] h-5 px-1.5 rounded-md bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">

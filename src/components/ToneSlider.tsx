@@ -23,10 +23,10 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label htmlFor="agent-tone" className="text-sm font-semibold text-[#2F3D39]">
+        <label htmlFor="agent-tone" className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
           How should it sound?
         </label>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 ${current.color}`}>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[#162238] ${current.color}`}>
           {current.label}
         </span>
       </div>
@@ -40,7 +40,7 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
               <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #3b82f6, #a855f7, #f97316)' }} />
               {/* Gray mask slides from right */}
               <div
-                className="absolute top-0 right-0 h-full bg-gray-200"
+                className="absolute top-0 right-0 h-full bg-gray-200 dark:bg-[#162238]"
                 style={{ width: `${100 - value}%` }}
               />
             </div>
@@ -66,27 +66,27 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
               return (
                 <div
                   key={i}
-                  className={`rounded-full transition-colors ${isMajor ? "w-[2px] h-[6px]" : "w-[1.5px] h-[4px]"} ${isActive ? "bg-[#1E9553]" : "bg-gray-300"}`}
+                  className={`rounded-full transition-colors ${isMajor ? "w-[2px] h-[6px]" : "w-[1.5px] h-[4px]"} ${isActive ? "bg-[#1E9553]" : "bg-gray-300 dark:bg-[#2a4060]"}`}
                 />
               );
             })}
           </div>
         </div>
 
-        <div className="flex justify-between text-xs text-gray-400 font-medium px-0.5 mt-1">
+        <div className="flex justify-between text-xs text-gray-400 dark:text-[#7A9BBF] font-medium px-0.5 mt-1">
           <span>Formal & precise</span>
           <span>Warm & conversational</span>
         </div>
       </div>
 
       {/* Tone preview pill */}
-      <div className="bg-gray-50 rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
+      <div className="bg-gray-50 dark:bg-[#162238] rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
         <span className="text-base mt-0.5 select-none">
           {value < 30 ? "🎩" : value < 60 ? "💼" : value < 80 ? "😊" : "👋"}
         </span>
         <div>
-          <p className="text-xs font-medium text-gray-600 mb-0.5">{current.label} tone</p>
-          <p className="text-xs text-gray-500 leading-relaxed">
+          <p className="text-xs font-medium text-gray-600 dark:text-[#C8D8EE] mb-0.5">{current.label} tone</p>
+          <p className="text-xs text-gray-500 dark:text-[#7A9BBF] leading-relaxed">
             {value < 30
               ? "Precise, structured sentences. Formal vocabulary. No contractions."
               : value < 60

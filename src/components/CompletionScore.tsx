@@ -28,16 +28,16 @@ export default function CompletionScore({ score }: CompletionScoreProps) {
       : "Fully configured";
 
   return (
-    <div className="p-3 bg-[#F5F5F5] rounded-xl space-y-2">
+    <div className="p-3 bg-[#F5F5F5] dark:bg-[#111D30] rounded-xl space-y-2">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-semibold text-gray-700">Persona completeness</span>
+        <span className="font-semibold text-gray-700 dark:text-[#C8D8EE]">Persona completeness</span>
         <span className={`font-semibold ${score === 5 ? "text-emerald-600" : score >= 3 ? "text-violet-600" : "text-amber-600"}`}>
           {score}/5 — {label}
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-gray-100 dark:bg-[#162238] rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${color}`}
           style={{ width: `${percent}%` }}
@@ -50,10 +50,10 @@ export default function CompletionScore({ score }: CompletionScoreProps) {
           <div key={step} className="flex-1 flex flex-col items-center gap-1">
             <div
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                i < score ? color : "bg-gray-200"
+                i < score ? color : "bg-gray-200 dark:bg-[#162238]"
               }`}
             />
-            <span className={`text-[9px] font-medium leading-none ${i < score ? "text-gray-600" : "text-gray-300"}`}>
+            <span className={`text-[9px] font-medium leading-none ${i < score ? "text-gray-600 dark:text-[#7A9BBF]" : "text-gray-300 dark:text-[#2a4060]"}`}>
               {step}
             </span>
           </div>

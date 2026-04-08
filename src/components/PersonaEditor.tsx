@@ -107,12 +107,12 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-[#1E3050]">
         <div>
           <h1 className="heading-h5 mb-1">
             Personalize · {state.agentName}
           </h1>
-          <p className="text-sm text-gray-400">Settings here apply to all deployment options.</p>
+          <p className="text-sm text-gray-400 dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -140,14 +140,14 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0 border-b border-gray-200 px-6 overflow-x-auto">
+      <div className="flex gap-0 border-b border-gray-200 dark:border-[#1E3050] px-6 overflow-x-auto">
         {["General", "Persona", "Conversation", "Citations", "Intelligence", "Advanced", "Security"].map((tab) => (
           <button
             key={tab}
             className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
               ${tab === "Persona"
                 ? "border-violet-600 text-violet-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                : "border-transparent text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE]"
               }`}
           >
             {tab}
@@ -158,11 +158,11 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       {/* Main split layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Controls */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[600px] bg-[#F5F5F5]">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[600px] bg-[#F5F5F5] dark:bg-[#0B1426]">
           {/* Section header */}
           <div className="flex items-center gap-2">
-            <span className="text-gray-400">✦</span>
-            <h2 className="text-base font-semibold text-gray-800">Set Up Instructions For Your Agent</h2>
+            <span className="text-gray-400 dark:text-[#7A9BBF]">✦</span>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-[#C8D8EE]">Set Up Instructions For Your Agent</h2>
           </div>
 
           {/* Completion score */}
@@ -212,7 +212,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
             >
               {saveLabel}
             </button>
-            <button className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors">
+            <button className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-[#7A9BBF] hover:text-gray-800 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors">
               Cancel
             </button>
             {score === 0 && (
@@ -225,14 +225,14 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         </div>
 
         {/* Right: Live agent preview */}
-        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col min-h-0">
+        <div className="w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] flex flex-col min-h-0">
           {/* Sync indicator */}
           <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
             <span className={`w-2 h-2 rounded-full shrink-0 ${
               syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
               syncStatus === "synced" ? "bg-emerald-400" : "bg-gray-300"
             }`} />
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">
               {syncStatus === "syncing" ? "Applying changes to agent..." :
                syncStatus === "synced" ? "Agent updated — chat reloaded" :
                "Live agent"}
@@ -257,9 +257,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-        <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center shrink-0">
+    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] overflow-hidden">
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 dark:border-[#1E3050]">
+        <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-[#162238] text-gray-500 dark:text-[#7A9BBF] text-xs font-bold flex items-center justify-center shrink-0">
           {number}
         </span>
         <span className="heading-h5">{label}</span>

@@ -103,8 +103,8 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors
           ${open
-            ? "border-violet-300 text-violet-700 bg-violet-50"
-            : "border-gray-200 text-gray-600 bg-white hover:border-gray-300 hover:text-gray-800"
+            ? "border-violet-300 text-violet-700 bg-violet-50 dark:bg-violet-950 dark:border-violet-700 dark:text-violet-300"
+            : "border-gray-200 dark:border-[#1E3050] text-gray-600 dark:text-[#7A9BBF] bg-white dark:bg-[#111D30] hover:border-gray-300 dark:hover:border-[#1E3050] hover:text-gray-800 dark:hover:text-[#C8D8EE]"
           }`}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -119,11 +119,11 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl border border-gray-200 shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[320px] bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] shadow-xl z-50 overflow-hidden">
 
           {/* Save new preset */}
-          <div className="p-4 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-500  mb-3">Save current as preset</p>
+          <div className="p-4 border-b border-gray-100 dark:border-[#1E3050]">
+            <p className="text-xs font-semibold text-gray-500 dark:text-[#7A9BBF] mb-3">Save current as preset</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -131,7 +131,7 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
                 onChange={(e) => setPresetName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
                 placeholder="Preset name..."
-                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF]"
               />
               <button
                 onClick={handleSave}
@@ -146,25 +146,25 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
           <div className="max-h-[280px] overflow-y-auto">
             {presets.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="text-sm text-gray-400 font-medium">No presets saved yet</p>
-                <p className="text-xs text-gray-300 mt-1">Save your current configuration above</p>
+                <p className="text-sm text-gray-400 dark:text-[#7A9BBF] font-medium">No presets saved yet</p>
+                <p className="text-xs text-gray-300 dark:text-[#2a4060] mt-1">Save your current configuration above</p>
               </div>
             ) : (
               <>
-                <p className="text-xs font-semibold text-gray-400  px-4 pt-3 pb-2">
+                <p className="text-xs font-semibold text-gray-400 dark:text-[#7A9BBF] px-4 pt-3 pb-2">
                   Saved presets
                 </p>
                 {presets.map((preset) => (
                   <div
                     key={preset.id}
-                    className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0
-                      ${savedFlash === preset.id ? "bg-emerald-50" : ""}`}
+                    className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#1E3050] transition-colors border-b border-gray-50 dark:border-[#1E3050] last:border-0
+                      ${savedFlash === preset.id ? "bg-emerald-50 dark:bg-emerald-950" : ""}`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
+                      <p className="text-sm font-medium text-gray-800 dark:text-[#C8D8EE] truncate">
                         {savedFlash === preset.id ? "✓ " : ""}{preset.name}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(preset.createdAt)}</p>
+                      <p className="text-xs text-gray-400 dark:text-[#7A9BBF] mt-0.5">{formatDate(preset.createdAt)}</p>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -179,7 +179,7 @@ export default function PresetManager({ currentState, onLoad }: PresetManagerPro
                         className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors
                           ${deleteConfirm === preset.id
                             ? "text-white bg-red-500 hover:bg-red-600"
-                            : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                            : "text-gray-400 dark:text-[#7A9BBF] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
                           }`}
                       >
                         {deleteConfirm === preset.id ? "Confirm" : "×"}

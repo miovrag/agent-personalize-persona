@@ -19,10 +19,10 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label id="style-chips-label" className="text-sm font-semibold text-[#2F3D39]">
+        <label id="style-chips-label" className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
           Communication qualities
         </label>
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">
           {selected.length}/3 selected
         </span>
       </div>
@@ -39,10 +39,10 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
               disabled={isDisabled}
               className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all select-none
                 ${isSelected
-                  ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                  ? "bg-gray-900 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] border-gray-900 dark:border-[#C8D8EE] shadow-sm"
                   : isDisabled
-                  ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50"
+                  ? "bg-gray-50 dark:bg-[#0B1426] text-gray-300 dark:text-[#2a4060] border-gray-100 dark:border-[#1E3050] cursor-not-allowed"
+                  : "bg-white dark:bg-[#162238] text-gray-600 dark:text-[#7A9BBF] border-gray-200 dark:border-[#1E3050] hover:border-gray-900 dark:hover:border-[#C8D8EE] hover:text-gray-900 dark:hover:text-[#C8D8EE] hover:bg-gray-50 dark:hover:bg-[#1E3050]"
                 }`}
             >
               {style}
@@ -52,7 +52,7 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
       </div>
 
       {selected.length === 3 && (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-400 dark:text-[#7A9BBF]">
           Maximum 3 qualities selected. Deselect one to change.
         </p>
       )}

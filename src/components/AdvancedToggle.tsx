@@ -28,13 +28,13 @@ export default function AdvancedToggle({ instruction, onEdit, hasCustomEdit }: A
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+    <div className="border border-gray-200 dark:border-[#1E3050] rounded-xl overflow-hidden bg-white dark:bg-[#111D30]">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-600 dark:text-[#7A9BBF] hover:text-gray-800 dark:hover:text-[#C8D8EE] hover:bg-gray-50 dark:hover:bg-[#1E3050] transition-colors"
       >
         <span className="flex items-center gap-2">
-          <span className="text-gray-400">⌨</span>
+          <span className="text-gray-400 dark:text-[#7A9BBF]">⌨</span>
           Edit raw instructions
           {hasCustomEdit && (
             <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-normal">
@@ -42,13 +42,13 @@ export default function AdvancedToggle({ instruction, onEdit, hasCustomEdit }: A
             </span>
           )}
         </span>
-        <span className={`text-gray-400 text-xs transition-transform ${open ? "rotate-180" : ""}`}>
+        <span className={`text-gray-400 dark:text-[#7A9BBF] text-xs transition-transform ${open ? "rotate-180" : ""}`}>
           ▼
         </span>
       </button>
 
       {open && (
-        <div className="border-t border-gray-100 p-4 space-y-3">
+        <div className="border-t border-gray-100 dark:border-[#1E3050] p-4 space-y-3">
           {showConflictWarning && (
             <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
               <span className="mt-0.5">⚠</span>
@@ -65,12 +65,12 @@ export default function AdvancedToggle({ instruction, onEdit, hasCustomEdit }: A
             value={localText}
             onChange={(e) => handleEdit(e.target.value)}
             rows={12}
-            className="w-full px-3 py-3 text-xs font-mono rounded-lg border border-gray-200 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 bg-gray-50 resize-none leading-relaxed text-gray-700"
+            className="w-full px-3 py-3 text-xs font-mono rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-gray-50 dark:bg-[#162238] resize-none leading-relaxed text-gray-700 dark:text-[#C8D8EE]"
             spellCheck={false}
           />
 
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-[#7A9BBF]">
               {localText.length} characters
             </p>
             <button
@@ -79,7 +79,7 @@ export default function AdvancedToggle({ instruction, onEdit, hasCustomEdit }: A
                 onEdit(instruction);
                 setShowConflictWarning(false);
               }}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-xs text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] transition-colors"
             >
               Reset to generated
             </button>

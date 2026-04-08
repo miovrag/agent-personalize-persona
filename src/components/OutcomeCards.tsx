@@ -23,10 +23,10 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <div>
-          <label className="text-sm font-semibold text-[#2F3D39]">
+          <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
             What can this agent trigger?
           </label>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-gray-400 dark:text-[#7A9BBF] mt-0.5">
             Beyond answering — agents can take real actions
           </p>
         </div>
@@ -47,8 +47,8 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
               key={outcome.id}
               className={`rounded-xl border transition-all overflow-hidden
                 ${isOn
-                  ? "border-violet-300 bg-violet-50"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950"
+                  : "border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#111D30] hover:border-gray-300 dark:hover:border-[#1E3050]"
                 }`}
             >
               <button
@@ -57,16 +57,16 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
               >
                 <span className="text-lg leading-none mt-0.5 select-none">{outcome.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold leading-tight ${isOn ? "text-violet-800" : "text-gray-700"}`}>
+                  <p className={`text-xs font-semibold leading-tight ${isOn ? "text-violet-800 dark:text-violet-300" : "text-gray-700 dark:text-[#C8D8EE]"}`}>
                     {outcome.label}
                   </p>
                   {isExpanded && (
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    <p className="text-xs text-gray-500 dark:text-[#7A9BBF] mt-1 leading-relaxed">
                       {outcome.description}
                     </p>
                   )}
                 </div>
-                <span className="text-gray-300 text-xs mt-0.5 shrink-0">
+                <span className="text-gray-300 dark:text-[#2a4060] text-xs mt-0.5 shrink-0">
                   {isExpanded ? "▲" : "▼"}
                 </span>
               </button>
@@ -80,7 +80,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
                     }}
                     className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-colors
                       ${isOn
-                        ? "bg-white text-red-500 border border-red-200 hover:bg-red-50"
+                        ? "bg-white dark:bg-[#111D30] text-red-500 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
                         : "bg-violet-600 text-white hover:bg-violet-700"
                       }`}
                   >
