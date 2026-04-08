@@ -10,11 +10,10 @@ export default function Sidebar() {
           <img src="/customgpt-logo.svg" alt="CustomGPT.ai" height={23} className="h-[23px] w-auto" />
         </div>
         {/* Layout toggle */}
-        <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <rect x="2" y="2" width="5" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-            <rect x="10" y="2" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-            <rect x="10" y="11" width="6" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+        <button className="hover:opacity-70 transition-opacity p-1 rounded">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="4" width="16" height="16" rx="2" stroke="#2F3D39" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9 4V20" stroke="#2F3D39" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
