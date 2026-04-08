@@ -1,102 +1,171 @@
 "use client";
 
-const NAV_ITEMS = [
-  { icon: "⚙", label: "Build" },
-  { icon: "✦", label: "Personalize", active: true },
-  { icon: "⚡", label: "Actions" },
-  { icon: "💬", label: "Ask" },
-  { icon: "🚀", label: "Deploy" },
-  { icon: "📊", label: "Analyze" },
-];
-
-const AGENTS = [
-  { name: "Grad Niš", initials: "GN", color: "#dc2626" },
-  { name: "Support Bot", initials: "SB", color: "#7c3aed" },
-  { name: "HR Assistant", initials: "HR", color: "#0891b2" },
-];
-
 export default function Sidebar() {
   return (
-    <aside className="w-[220px] shrink-0 flex flex-col h-full border-r border-gray-200 bg-white">
-      {/* Logo */}
-      <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+    <aside className="w-[268px] shrink-0 flex flex-col h-full border-r border-gray-200 bg-white">
+
+      {/* Logo row */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-              <circle cx="8" cy="8" r="2" fill="white"/>
-            </svg>
-          </div>
-          <span className="text-sm font-bold text-gray-800">CustomGPT.ai</span>
+          {/* Snowflake/crystal icon */}
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="14" fill="#EEF2FF"/>
+            <path d="M14 7v14M7 14h14M9.5 9.5l9 9M18.5 9.5l-9 9" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round"/>
+            <circle cx="14" cy="14" r="2.5" fill="#7c3aed"/>
+          </svg>
+          <span className="text-[15px] font-bold text-gray-900 tracking-tight">CustomGPT.ai</span>
         </div>
-        <button className="text-gray-400 hover:text-gray-600 text-xs">☰</button>
+        {/* Layout toggle */}
+        <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="2" width="5" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+            <rect x="10" y="2" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+            <rect x="10" y="11" width="6" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+          </svg>
+        </button>
       </div>
 
       {/* New Agent button */}
-      <div className="px-3 py-3">
-        <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors">
-          <span className="text-base leading-none">+</span>
+      <div className="px-4 pb-5">
+        <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors shadow-sm">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v12M1 7h12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
           New Agent
         </button>
       </div>
 
-      {/* Current agent */}
-      <div className="px-3 pb-1">
-        <div className="px-2 py-1.5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Current Agent</p>
-          <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-            <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-white text-[9px] font-bold">
-              GN
-            </div>
-            Grad Niš
-          </div>
-        </div>
-      </div>
+      {/* Main nav */}
+      <nav className="flex-1 px-3 space-y-0.5">
+        {/* Dashboard */}
+        <NavItem
+          label="Dashboard"
+          icon={
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M9 9L12.5 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
+            </svg>
+          }
+        />
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-1 space-y-0.5">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.label}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left
-              ${item.active
-                ? "bg-violet-50 text-violet-700 font-semibold"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
-              }`}
-          >
-            <span className="text-base leading-none w-4 text-center">{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
+        {/* Agents — active */}
+        <NavItem
+          label="Agents"
+          active
+          icon={
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M3 15c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="14" cy="5" r="1.5" fill="currentColor" stroke="white" strokeWidth="1"/>
+            </svg>
+          }
+        />
+
+        {/* Resources */}
+        <NavItem
+          label="Resources"
+          icon={
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="3" y="2" width="12" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M6 6h6M6 9h6M6 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          }
+        />
+
+        {/* Slack Community */}
+        <NavItem
+          label="Slack Community"
+          icon={
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="2" width="6" height="6" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <rect x="10" y="2" width="6" height="6" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <rect x="2" y="10" width="6" height="6" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <rect x="10" y="10" width="6" height="6" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+            </svg>
+          }
+        />
+
+        {/* Notifications */}
+        <NavItem
+          label="Notifications"
+          badge={3}
+          icon={
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 2a5 5 0 00-5 5v3l-1.5 2.5h13L14 10V7a5 5 0 00-5-5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M7 14.5c0 1.1.9 2 2 2s2-.9 2-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          }
+        />
       </nav>
 
       {/* Copilot */}
-      <div className="px-3 py-3 border-t border-gray-100">
-        <p className="text-xs font-semibold text-gray-400 mb-2">CustomGPT.ai Copilot</p>
-        <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-          <span className="text-xs text-gray-400 flex-1">I need help with...</span>
-          <button className="text-violet-500 hover:text-violet-700">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M6 1L11 6L6 11M1 6H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="px-4 py-5">
+        <p className="text-sm font-semibold text-gray-800 mb-2.5">CustomGPT.ai Copilot</p>
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors">
+          <span className="text-sm text-gray-400 flex-1">I need help with...</span>
+          <button className="text-gray-400 hover:text-violet-600 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-3 pb-4 space-y-0.5 border-t border-gray-100 pt-3">
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-          <span className="text-base">⟨⟩</span> Developers
-          <span className="ml-auto text-gray-300 text-xs">›</span>
+      <div className="border-t border-gray-100">
+        {/* Developers */}
+        <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+          <div className="w-9 h-9 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M4 4L1 7l3 3M10 4l3 3-3 3M8 2l-2 10" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span className="text-sm font-medium text-gray-700">Developers</span>
+          <svg className="ml-auto text-gray-400" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-          <div className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-600">
+
+        {/* My Account */}
+        <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-violet-400 to-pink-400 shrink-0 flex items-center justify-center text-white text-xs font-bold">
             MR
           </div>
-          My Profile
-          <span className="ml-auto text-gray-300 text-xs">›</span>
+          <span className="text-sm font-medium text-gray-700">My Account</span>
+          <svg className="ml-auto text-gray-400" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
       </div>
+
     </aside>
+  );
+}
+
+function NavItem({
+  label,
+  icon,
+  active,
+  badge,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  badge?: number;
+}) {
+  return (
+    <button
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-left
+        ${active ? "text-violet-600 font-semibold" : "text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium"}`}
+    >
+      <span className={active ? "text-violet-600" : "text-gray-500"}>{icon}</span>
+      <span className="flex-1">{label}</span>
+      {badge != null && (
+        <span className="min-w-[20px] h-5 px-1.5 rounded-md bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+          {badge}
+        </span>
+      )}
+    </button>
   );
 }
