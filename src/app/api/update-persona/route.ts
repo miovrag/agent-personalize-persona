@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { persona_instructions } = await req.json();
+  const { persona_instructions, example_questions } = await req.json();
 
   const res = await fetch(
     "https://app.customgpt.ai/api/v1/projects/89781/settings",
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ persona_instructions }),
+      body: JSON.stringify({ persona_instructions, example_questions }),
     }
   );
 

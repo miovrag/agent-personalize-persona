@@ -116,6 +116,72 @@ export function generatePreviewResponse(state: PersonaState): {
   };
 }
 
+export function generateExampleQuestions(state: PersonaState): string[] {
+  const role = state.role.trim().toLowerCase();
+  const tone = state.tone;
+
+  // Formal phrasing (low tone) vs casual (high tone)
+  const ask = tone < 40 ? "What is the procedure for" : tone < 70 ? "How do I" : "Can you help me with";
+  const tell = tone < 40 ? "Please provide information on" : tone < 70 ? "Tell me about" : "What's the deal with";
+  const find = tone < 40 ? "Where can I find documentation regarding" : tone < 70 ? "Where can I find info about" : "Where do I look for";
+  const latest = tone < 40 ? "What are the latest decisions regarding" : tone < 70 ? "What are recent updates on" : "What's new with";
+
+  // Derive topic keywords from role
+  if (role.includes("city") || role.includes("grad") || role.includes("municipal") || role.includes("official") || role.includes("citizen")) {
+    return [
+      `${ask} applying for facade renovation co-financing?`,
+      `${tell} the city budget for this year`,
+      `${find} decisions on urban planning changes`,
+      `${latest} public infrastructure projects`,
+    ];
+  }
+
+  if (role.includes("support") || role.includes("customer") || role.includes("help")) {
+    return [
+      `${ask} getting a refund?`,
+      `${tell} your pricing plans`,
+      `${find} your cancellation policy`,
+      `${latest} product features`,
+    ];
+  }
+
+  if (role.includes("hr") || role.includes("employee") || role.includes("human resource")) {
+    return [
+      `${ask} requesting time off?`,
+      `${tell} the onboarding process`,
+      `${find} the benefits package details`,
+      `${latest} company policies`,
+    ];
+  }
+
+  if (role.includes("legal") || role.includes("law") || role.includes("compliance")) {
+    return [
+      `${ask} submitting a legal inquiry?`,
+      `${tell} your compliance requirements`,
+      `${find} the relevant regulations`,
+      `${latest} policy changes`,
+    ];
+  }
+
+  if (role.includes("health") || role.includes("medical") || role.includes("clinic") || role.includes("patient")) {
+    return [
+      `${ask} booking an appointment?`,
+      `${tell} your available services`,
+      `${find} information about my treatment options`,
+      `${latest} clinic hours and locations`,
+    ];
+  }
+
+  // Generic fallback based on role text
+  const subject = role.length > 5 ? role.slice(0, 40) : "your services";
+  return [
+    `${ask} getting started with ${subject}?`,
+    `${tell} what you can help me with`,
+    `${find} more information about ${subject}`,
+    `${latest} updates or changes`,
+  ];
+}
+
 export function completionScore(state: PersonaState): number {
   let score = 0;
   if (state.role.trim().length > 10) score++;

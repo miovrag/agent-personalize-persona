@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
-import { generateInstruction, completionScore } from "./generateInstruction";
+import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
 import RoleField from "./RoleField";
 import ToneSlider from "./ToneSlider";
 import StyleChips from "./StyleChips";
@@ -52,7 +52,10 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         await fetch("/api/update-persona", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ persona_instructions: instruction }),
+          body: JSON.stringify({
+            persona_instructions: instruction,
+            example_questions: generateExampleQuestions(state),
+          }),
         });
         setSyncStatus("synced");
         setWidgetKey((k) => k + 1); // reload widget with updated persona
