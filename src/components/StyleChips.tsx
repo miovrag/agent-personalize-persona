@@ -19,7 +19,7 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-800">
+        <label className="text-sm font-semibold text-[#2F3D39]">
           Communication qualities
         </label>
         <span className="text-xs text-gray-400">

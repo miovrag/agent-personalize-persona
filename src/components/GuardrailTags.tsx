@@ -35,7 +35,7 @@ export default function GuardrailTags({ selected, onChange }: GuardrailTagsProps
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-gray-800">
+        <label className="text-sm font-semibold text-[#2F3D39]">
           What should it never do?
         </label>
         {selected.length > 0 && (

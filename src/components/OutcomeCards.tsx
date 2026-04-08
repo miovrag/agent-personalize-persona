@@ -23,7 +23,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <div>
-          <label className="text-sm font-semibold text-gray-800">
+          <label className="text-sm font-semibold text-[#2F3D39]">
             What can this agent trigger?
           </label>
           <p className="text-xs text-gray-400 mt-0.5">
