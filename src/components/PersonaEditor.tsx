@@ -12,6 +12,7 @@ import AdvancedToggle from "./AdvancedToggle";
 import CompletionScore from "./CompletionScore";
 import PresetManager from "./PresetManager";
 import CustomGPTWidget from "./CustomGPTWidget";
+import ThemeToggle from "./ThemeToggle";
 
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
@@ -121,6 +122,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
               Unsaved changes
             </span>
           )}
+          <ThemeToggle />
           <PresetManager currentState={state} onLoad={handleLoadPreset} />
           <button
             onClick={handleSave}
