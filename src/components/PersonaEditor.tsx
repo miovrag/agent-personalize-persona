@@ -216,13 +216,6 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
             />
           </div>
 
-          {/* Preview hint */}
-          <div className="mt-4 p-3 bg-violet-50 rounded-xl border border-violet-100">
-            <p className="text-xs text-violet-700 font-medium mb-1">What you&apos;re seeing</p>
-            <p className="text-xs text-violet-600 leading-relaxed">
-              This preview simulates how your agent greets users and responds based on your current tone and role settings.
-            </p>
-          </div>
         </div>
       </div>
     </div>
