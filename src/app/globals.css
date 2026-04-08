@@ -77,6 +77,15 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 1px 4px rgba(124, 58, 237, 0.4);
 }
 
+/* CustomGPT embed fills parent */
+#customgpt_chat,
+#customgpt_chat iframe,
+#customgpt_chat > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
 /* Smooth fade for preview updates */
 @keyframes fadeRefresh {
   0% { opacity: 0.4; transform: translateY(4px); }

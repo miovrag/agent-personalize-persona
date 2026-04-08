@@ -220,9 +220,9 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         </div>
 
         {/* Right: Live agent preview */}
-        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col">
+        <div className="w-[420px] shrink-0 border-l border-gray-200 bg-[#F5F5F5] flex flex-col min-h-0">
           {/* Sync indicator */}
-          <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+          <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
             <span className={`w-2 h-2 rounded-full shrink-0 ${
               syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
               syncStatus === "synced" ? "bg-emerald-400" : "bg-gray-300"
@@ -233,7 +233,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
                "Live agent"}
             </span>
           </div>
-          <div className="flex-1 px-4 pb-4">
+          <div className="flex-1 px-4 pb-4 min-h-0">
             <CustomGPTWidget reloadKey={widgetKey} />
           </div>
         </div>
