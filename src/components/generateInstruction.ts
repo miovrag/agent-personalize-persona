@@ -14,32 +14,78 @@ function toneAdverb(tone: number): string {
   return "Use everyday language. Be warm and personable. Contractions are encouraged.";
 }
 
-export function generateInstruction(state: PersonaState): string {
-  const { role, tone, styles, guardrails, outcomes } = state;
+const OUTPUT_STYLE_MAP: Record<string, string> = {
+  "short-steps": "Format responses as: short answer + numbered steps + required documentation + responsible institution.",
+  "bullets": "Use bullet points to structure all responses.",
+  "detailed": "Provide detailed explanations with full context and reasoning.",
+  "step-guide": "Always format answers as a numbered step-by-step guide.",
+  "summary": "Begin with a brief summary, then provide full details below.",
+};
 
-  const roleText = role.trim() || "assist users with their questions";
-  const toneText = toneDescriptor(tone);
-  const toneStyle = toneAdverb(tone);
+export function generateInstruction(state: PersonaState): string {
+  const role = state.role ?? "";
+  const mission = state.mission ?? "";
+  const audience = state.audience ?? "";
+  const tone = state.tone ?? 50;
+  const styles = state.styles ?? [];
+  const guardrails = state.guardrails ?? [];
+  const behaviorToggles = state.behaviorToggles ?? [];
+  const boundaries = state.boundaries ?? "";
+  const outputStyle = state.outputStyle ?? "";
+  const additionalInstructions = state.additionalInstructions ?? "";
+  const outcomes = state.outcomes ?? [];
 
   const lines: string[] = [];
 
+  // Identity
   lines.push(`## Role & Scope`);
-  lines.push(`You are an AI agent designed to ${roleText}. Respond ${toneText}.`);
+  if (role.trim()) lines.push(`**Role:** ${role.trim()}`);
+  if (mission.trim()) lines.push(`**Mission:** ${mission.trim()}`);
+  if (audience.trim()) lines.push(`**Audience:** ${audience.trim()}`);
+  if (!role.trim() && !mission.trim() && !audience.trim()) {
+    lines.push(`You are an AI agent designed to assist users with their questions.`);
+  }
+  lines.push(`Respond ${toneDescriptor(tone)}.`);
   lines.push("");
 
+  // Communication style
   lines.push(`## Communication Style`);
-  lines.push(toneStyle);
+  lines.push(toneAdverb(tone));
   if (styles.length > 0) {
     lines.push(`Emphasize these qualities in your responses: ${styles.join(", ")}.`);
   }
   lines.push("");
 
-  if (guardrails.length > 0) {
+  // Behavior rules
+  if (guardrails.length > 0 || behaviorToggles.length > 0) {
     lines.push(`## Behavior Rules`);
     guardrails.forEach((g) => lines.push(`- ${g}`));
+    if (behaviorToggles.includes("steps"))
+      lines.push(`- Always break down answers into clear, numbered steps.`);
+    if (behaviorToggles.includes("institution"))
+      lines.push(`- Always mention the responsible institution or authority.`);
+    if (behaviorToggles.includes("clarify"))
+      lines.push(`- Ask a clarifying question before giving a final answer when the request is ambiguous.`);
+    if (behaviorToggles.includes("cite"))
+      lines.push(`- Cite the source whenever possible.`);
     lines.push("");
   }
 
+  // Boundaries
+  if (boundaries.trim()) {
+    lines.push(`## Boundaries`);
+    lines.push(boundaries.trim());
+    lines.push("");
+  }
+
+  // Output format
+  if (outputStyle && OUTPUT_STYLE_MAP[outputStyle]) {
+    lines.push(`## Output Format`);
+    lines.push(OUTPUT_STYLE_MAP[outputStyle]);
+    lines.push("");
+  }
+
+  // Capabilities
   if (outcomes.length > 0) {
     lines.push(`## Capabilities`);
     lines.push(
@@ -48,6 +94,13 @@ export function generateInstruction(state: PersonaState): string {
     lines.push(
       "Use these capabilities when they serve the user's goal, not proactively."
     );
+    lines.push("");
+  }
+
+  // Additional instructions
+  if (additionalInstructions.trim()) {
+    lines.push(`## Additional Instructions`);
+    lines.push(additionalInstructions.trim());
     lines.push("");
   }
 
@@ -64,9 +117,11 @@ export function generatePreviewResponse(state: PersonaState): {
   response: string;
   suggestions: string[];
 } {
-  const { role, tone } = state;
+  const { role, mission, tone } = state;
   const roleHint = role.trim()
     ? role.trim().toLowerCase()
+    : mission.trim()
+    ? mission.trim().toLowerCase()
     : "your questions";
 
   if (tone < 25) {
@@ -117,17 +172,15 @@ export function generatePreviewResponse(state: PersonaState): {
 }
 
 export function generateExampleQuestions(state: PersonaState): string[] {
-  const role = state.role.trim().toLowerCase();
+  const role = (state.role + " " + state.mission).trim().toLowerCase();
   const tone = state.tone;
 
-  // Formal phrasing (low tone) vs casual (high tone)
   const ask = tone < 40 ? "What is the procedure for" : tone < 70 ? "How do I" : "Can you help me with";
   const tell = tone < 40 ? "Please provide information on" : tone < 70 ? "Tell me about" : "What's the deal with";
   const find = tone < 40 ? "Where can I find documentation regarding" : tone < 70 ? "Where can I find info about" : "Where do I look for";
   const latest = tone < 40 ? "What are the latest decisions regarding" : tone < 70 ? "What are recent updates on" : "What's new with";
 
-  // Derive topic keywords from role
-  if (role.includes("city") || role.includes("grad") || role.includes("municipal") || role.includes("official") || role.includes("citizen")) {
+  if (role.includes("city") || role.includes("grad") || role.includes("municipal") || role.includes("official") || role.includes("citizen") || role.includes("građan")) {
     return [
       `${ask} applying for facade renovation co-financing?`,
       `${tell} the city budget for this year`,
@@ -172,8 +225,7 @@ export function generateExampleQuestions(state: PersonaState): string[] {
     ];
   }
 
-  // Generic fallback based on role text
-  const subject = role.length > 5 ? role.slice(0, 40) : "your services";
+  const subject = state.role.trim().length > 5 ? state.role.trim().slice(0, 40) : "your services";
   return [
     `${ask} getting started with ${subject}?`,
     `${tell} what you can help me with`,
@@ -184,10 +236,10 @@ export function generateExampleQuestions(state: PersonaState): string[] {
 
 export function completionScore(state: PersonaState): number {
   let score = 0;
-  if (state.role.trim().length > 10) score++;
-  if (state.tone !== 50) score++;
-  if (state.styles.length > 0) score++;
-  if (state.guardrails.length > 0) score++;
-  if (state.outcomes.length > 0) score++;
+  if (state.role.trim().length > 0) score++;
+  if (state.mission.trim().length > 0) score++;
+  if (state.audience.trim().length > 0) score++;
+  if (state.tone !== 50 || state.styles.length > 0) score++;
+  if (state.guardrails.length > 0 || state.behaviorToggles.length > 0) score++;
   return score;
 }

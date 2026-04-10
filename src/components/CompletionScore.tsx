@@ -4,7 +4,7 @@ interface CompletionScoreProps {
   score: number; // 0–5
 }
 
-const STEPS = ["Role", "Tone", "Style", "Rules", "Outcomes"];
+const STEPS = ["Role", "Mission", "Audience", "Personality", "Rules"];
 
 export default function CompletionScore({ score }: CompletionScoreProps) {
   const percent = (score / 5) * 100;

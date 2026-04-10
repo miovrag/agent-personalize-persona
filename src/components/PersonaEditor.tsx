@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
+import { OUTPUT_STYLE_OPTIONS } from "./types";
 import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
-import RoleField from "./RoleField";
+import StructuredIdentity from "./StructuredIdentity";
 import ToneSlider from "./ToneSlider";
 import StyleChips from "./StyleChips";
 import GuardrailTags from "./GuardrailTags";
+import BehaviorToggles from "./BehaviorToggles";
 import OutcomeCards from "./OutcomeCards";
 import AdvancedToggle from "./AdvancedToggle";
 import CompletionScore from "./CompletionScore";
@@ -17,9 +19,15 @@ import ThemeToggle from "./ThemeToggle";
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
   role: "",
+  mission: "",
+  audience: "",
   tone: 50,
   styles: [],
   guardrails: [],
+  behaviorToggles: [],
+  boundaries: "",
+  outputStyle: "",
+  additionalInstructions: "",
   outcomes: [],
 };
 
@@ -35,7 +43,6 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Regenerate instruction + debounce-sync to live agent
   useEffect(() => {
     if (!hasCustomEdit) {
       const generated = generateInstruction(state);
@@ -44,7 +51,6 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
     setIsDirty(true);
   }, [state]);
 
-  // Debounce: push instruction to CustomGPT API 1.5s after last change
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
@@ -59,7 +65,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
           }),
         });
         setSyncStatus("synced");
-        setWidgetKey((k) => k + 1); // reload widget with updated persona
+        setWidgetKey((k) => k + 1);
         setTimeout(() => setSyncStatus("idle"), 2000);
       } catch {
         setSyncStatus("idle");
@@ -70,7 +76,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
 
   const updateState = useCallback((patch: Partial<PersonaState>) => {
     setState((prev) => ({ ...prev, ...patch }));
-    setHasCustomEdit(false); // structured control change resets manual edit flag
+    setHasCustomEdit(false);
     setSaveState("idle");
   }, []);
 
@@ -84,7 +90,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   };
 
   const handleLoadPreset = (presetState: PersonaState) => {
-    setState(presetState);
+    setState({ ...DEFAULT_STATE, ...presetState });
     setHasCustomEdit(false);
     setIsDirty(true);
     setSaveState("idle");
@@ -93,11 +99,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   const score = completionScore(state);
 
   const saveLabel =
-    saveState === "saving"
-      ? "Publishing..."
-      : saveState === "saved"
-      ? "Published ✓"
-      : "Publish";
+    saveState === "saving" ? "Publishing..." : saveState === "saved" ? "Published ✓" : "Publish";
 
   const saveBg =
     saveState === "saved"
@@ -109,12 +111,9 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-[#1E3050]">
         <div>
-          <h1 className="heading-h5 mb-1">
-            Personalize · {state.agentName}
-          </h1>
+          <h1 className="heading-h5 mb-1">Personalize · {state.agentName}</h1>
           <p className="text-sm text-gray-400 dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
         </div>
-
         <div className="flex items-center gap-3">
           {isDirty && saveState === "idle" && (
             <span className="text-xs text-amber-500 font-medium flex items-center gap-1.5">
@@ -159,18 +158,21 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Controls */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[600px] bg-[#F5F5F5] dark:bg-[#0B1426]">
-          {/* Section header */}
           <div className="flex items-center gap-2">
             <span className="text-gray-400 dark:text-[#7A9BBF]">✦</span>
             <h2 className="text-base font-semibold text-gray-800 dark:text-[#C8D8EE]">Set Up Instructions For Your Agent</h2>
           </div>
 
-          {/* Completion score */}
           <CompletionScore score={score} />
 
           {/* 1. Identity */}
           <Section number={1} label="Identity">
-            <RoleField value={state.role} onChange={(role) => updateState({ role })} />
+            <StructuredIdentity
+              role={state.role}
+              mission={state.mission}
+              audience={state.audience}
+              onChange={(patch) => updateState(patch)}
+            />
           </Section>
 
           {/* 2. Personality */}
@@ -183,13 +185,88 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
 
           {/* 3. Behavior Rules */}
           <Section number={3} label="Behavior Rules">
-            <GuardrailTags selected={state.guardrails} onChange={(guardrails) => updateState({ guardrails })} />
+            <div className="space-y-5">
+              <GuardrailTags selected={state.guardrails} onChange={(guardrails) => updateState({ guardrails })} />
+              <div className="border-t border-gray-100 dark:border-[#1E3050] pt-4">
+                <BehaviorToggles
+                  selected={state.behaviorToggles}
+                  onChange={(behaviorToggles) => updateState({ behaviorToggles })}
+                />
+              </div>
+            </div>
           </Section>
 
-          {/* 4. Workflow Outcomes */}
-          <Section number={4} label="Workflow Outcomes">
+          {/* 4. Output & Limits */}
+          <Section number={4} label="Output & Limits">
+            <div className="space-y-5">
+              {/* Output style */}
+              <div className="space-y-2.5">
+                <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
+                  Output style
+                  <span className="ml-2 text-xs font-normal text-gray-400 dark:text-[#7A9BBF]">How should responses be formatted?</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {OUTPUT_STYLE_OPTIONS.map((opt) => {
+                    const isOn = state.outputStyle === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => updateState({ outputStyle: isOn ? "" : opt.id })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                          ${isOn
+                            ? "bg-violet-600 text-white border-violet-600"
+                            : "bg-white dark:bg-[#162238] text-gray-500 dark:text-[#7A9BBF] border-gray-200 dark:border-[#1E3050] hover:border-violet-300 dark:hover:border-violet-700 hover:text-violet-700 dark:hover:text-violet-300"
+                          }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Boundaries */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
+                  Boundaries
+                  <span className="ml-2 text-xs font-normal text-gray-400 dark:text-[#7A9BBF]">What should this agent never do?</span>
+                </label>
+                <textarea
+                  value={state.boundaries}
+                  onChange={(e) => updateState({ boundaries: e.target.value })}
+                  placeholder={'e.g. "Ne izmišlja propise, ne daje pravni savet kao advokat, ne tvrdi nešto bez osnova"'}
+                  rows={3}
+                  className="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] transition-all leading-relaxed"
+                />
+              </div>
+            </div>
+          </Section>
+
+          {/* 5. Workflow Outcomes */}
+          <Section number={5} label="Workflow Outcomes">
             <OutcomeCards selected={state.outcomes} onChange={(outcomes) => updateState({ outcomes })} />
           </Section>
+
+          {/* Additional Instructions */}
+          <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] overflow-hidden">
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 dark:border-[#1E3050]">
+              <span className="text-gray-400 dark:text-[#7A9BBF] text-sm">✎</span>
+              <span className="heading-h5">Additional Instructions</span>
+              <span className="text-xs text-gray-400 dark:text-[#7A9BBF] font-normal">Describe this assistant in your own words</span>
+            </div>
+            <div className="px-5 py-4">
+              <textarea
+                value={state.additionalInstructions}
+                onChange={(e) => updateState({ additionalInstructions: e.target.value })}
+                placeholder={'e.g. "Agent treba da se ponaša kao digitalni službenik visokog nivoa, ali da građaninu objašnjava jednostavno, bez administrativnog zamora."'}
+                rows={4}
+                className="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] transition-all leading-relaxed"
+              />
+              <p className="text-xs text-gray-400 dark:text-[#7A9BBF] mt-2">
+                Use this for nuances that don&apos;t fit the structured fields above. This is a supplement, not the main mechanism.
+              </p>
+            </div>
+          </div>
 
           {/* Advanced */}
           <AdvancedToggle
@@ -226,7 +303,6 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
 
         {/* Right: Live agent preview */}
         <div className="w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] flex flex-col min-h-0">
-          {/* Sync indicator */}
           <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
             <span className={`w-2 h-2 rounded-full shrink-0 ${
               syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
