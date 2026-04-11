@@ -15,6 +15,7 @@ import AdvancedToggle from "./AdvancedToggle";
 import CompletionScore from "./CompletionScore";
 import PresetManager from "./PresetManager";
 import CustomGPTWidget from "./CustomGPTWidget";
+import BuilderChat from "./BuilderChat";
 import ThemeToggle from "./ThemeToggle";
 
 const DEFAULT_STATE: PersonaState = {
@@ -33,6 +34,69 @@ const DEFAULT_STATE: PersonaState = {
 };
 
 type SaveState = "idle" | "saving" | "saved";
+
+// Pre-fill persona state based on the user's onboarding answer
+function parsePreFillFromIntent(text: string): Partial<PersonaState> {
+  const t = text.toLowerCase();
+
+  if (/city|citizen|grad|municipal|government|official|administrative|procedure/.test(t)) {
+    return {
+      role: "AI Assistant for City Administration",
+      mission: "Help citizens understand procedures, responsibilities, and steps",
+      audience: "Citizens without legal or administrative expertise",
+      tone: 25,
+      behaviorToggles: ["steps", "institution", "cite"],
+      outputStyle: "short-steps",
+      guardrails: ["Escalate to human if unsure"],
+      boundaries: "Does not fabricate regulations, does not give legal advice as a lawyer, does not make claims without factual basis",
+    };
+  }
+
+  if (/customer|support|helpdesk|product|issue|resolution/.test(t)) {
+    return {
+      role: "Customer Support Assistant",
+      mission: "Help customers resolve issues and answer product questions",
+      audience: "Customers seeking product help and issue resolution",
+      tone: 65,
+      behaviorToggles: ["clarify", "cite"],
+      outputStyle: "bullets",
+      guardrails: ["Escalate to human if unsure", "Never share personal data"],
+    };
+  }
+
+  if (/\bhr\b|human resource|employee|onboarding|payroll|benefit/.test(t)) {
+    return {
+      role: "HR Assistant",
+      mission: "Help employees navigate HR policies and internal processes",
+      audience: "Employees with questions about HR policies and benefits",
+      tone: 50,
+      behaviorToggles: ["steps", "cite"],
+      outputStyle: "step-guide",
+      guardrails: ["Never share personal data", "Escalate to human if unsure"],
+    };
+  }
+
+  if (/health|medical|clinic|patient|doctor|appointment|treatment/.test(t)) {
+    return {
+      role: "Healthcare Assistant",
+      mission: "Guide patients through clinic services and appointment booking",
+      audience: "Patients seeking healthcare information and services",
+      tone: 55,
+      behaviorToggles: ["steps", "clarify"],
+      outputStyle: "short-steps",
+      guardrails: ["Escalate to human if unsure", "Never share personal data", "Avoid opinions on sensitive topics"],
+      boundaries: "Does not provide medical diagnosis or treatment recommendations",
+    };
+  }
+
+  // Generic — use the answer text directly as role/mission
+  const trimmed = text.trim();
+  return {
+    role: trimmed.slice(0, 80),
+    mission: trimmed.slice(0, 150),
+    tone: 50,
+  };
+}
 
 // Determine which modules to show based on the user's onboarding answer
 function parseModulesFromIntent(text: string): Set<string> {
@@ -67,6 +131,7 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [visibleModules, setVisibleModules] = useState<Set<string>>(new Set());
+  const [chatMode, setChatMode] = useState<"user" | "builder">("user");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -108,7 +173,9 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
 
   const handleOnboardingSubmit = (answer: string) => {
     const modules = parseModulesFromIntent(answer);
+    const preFill = parsePreFillFromIntent(answer);
     setVisibleModules(modules);
+    setState((prev) => ({ ...prev, ...preFill }));
     setShowOnboarding(false);
   };
 
@@ -348,21 +415,58 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
             </div>
           </div>
 
-          {/* Right: Live agent preview */}
+          {/* Right: Chat panel */}
           <div className="w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] flex flex-col min-h-0">
-            <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${
-                syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
-                syncStatus === "synced" ? "bg-emerald-400" : "bg-gray-300"
-              }`} />
-              <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">
-                {syncStatus === "syncing" ? "Applying changes to agent..." :
-                 syncStatus === "synced" ? "Agent updated — chat reloaded" :
-                 "Live agent"}
-              </span>
+            {/* Mode switcher header */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0 gap-3">
+              {/* Sync indicator (user mode only) */}
+              {chatMode === "user" ? (
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${
+                    syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
+                    syncStatus === "synced" ? "bg-emerald-400" : "bg-gray-300"
+                  }`} />
+                  <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">
+                    {syncStatus === "syncing" ? "Applying changes..." :
+                     syncStatus === "synced" ? "Agent updated" : "Live agent"}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-xs text-violet-600 dark:text-violet-400 font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />
+                  Builder mode
+                </span>
+              )}
+
+              {/* Toggle */}
+              <div className="flex items-center bg-gray-100 dark:bg-[#162238] rounded-lg p-0.5 shrink-0">
+                {(["user", "builder"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setChatMode(mode)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all
+                      ${chatMode === mode
+                        ? "bg-white dark:bg-[#111D30] text-gray-800 dark:text-[#C8D8EE] shadow-sm"
+                        : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE]"
+                      }`}
+                  >
+                    {mode === "user" ? "User view" : "Builder"}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-hidden px-5 pb-6">
-              <CustomGPTWidget reloadKey={widgetKey} />
+
+            {/* Chat content — both stay mounted, visibility toggled via CSS */}
+            <div className="flex-1 min-h-0 overflow-hidden px-5 pb-6 relative">
+              <div className={`absolute inset-0 px-5 pb-6 ${chatMode === "user" ? "" : "invisible pointer-events-none"}`}>
+                <CustomGPTWidget reloadKey={widgetKey} />
+              </div>
+              <div className={`absolute inset-0 ${chatMode === "builder" ? "" : "invisible pointer-events-none"}`}>
+                <BuilderChat
+                  state={state}
+                  onApply={(patch) => updateState(patch)}
+                />
+              </div>
             </div>
           </div>
         </div>
