@@ -21,98 +21,121 @@ interface Props {
 }
 
 // ─── Suggestions metadata ─────────────────────────────────────────────────────
+// Agent archetype tabs (5.2 Growth Opportunities) + original config tabs:
+// • Expert  — 5,425 avg prompts (5× mean), only 1.2% new users → goldmine
+// • Ops     — 2,613 avg prompts, enterprise-embedded, only 0.6% new users
+// • Coaching — 13.7% new users but lowest engagement (609 prompts) → churn fix
 
-// Sorted by strategic impact from agent_taxonomy_report.pdf:
-// Role first (JTBD = most fundamental), then biggest config gaps:
-// Guardrails +44pp, Behavior +41pp/+33pp, Format +36pp, Tone
-const INITIAL_SUGGESTIONS = [
-  // Role — JTBD (taxonomy top categories by popularity + engagement)
-  "Customer support",       // 22% popular, #1 category
-  "Knowledge base Q&A",     // +8.3pp new users, gateway category
-  "Education & training",   // 17.9% popular
-  "Domain expert",          // 5,425 avg prompts, highest engagement
-  "Lead capture",           // +2.4pp new users
-  "Coaching",               // +9.6pp new users
-
-  // Guardrails — biggest config gap +44.2pp
-  "Don't make up info",     // core accuracy guardrail
-  "Refuse off-topic",       // stay in scope
-  "No competitor talk",     // brand safety
-  "No medical/legal advice",// liability protection
-  "Stay in knowledge base", // KB-specific guardrail
-  "Escalate to human",      // escalation rules +30.9pp gap
-
-  // Behavior — follow-up +41.9pp, source citation +33.6pp gaps
-  "Ask clarifying questions", // follow-up questions gap
-  "Always cite sources",      // source citation gap
-  "Collect contact info",     // lead capture behavior
-  "Book a call CTA",          // CTA actions gap
-  "Match user language",      // language rules gap
-  "Friendly greeting",        // greeting script gap
-
-  // Tone — Q2 data from taxonomy report
-  "Professional tone",
-  "Friendly & warm",
-  "Concise & direct",
-  "Empathetic tone",
-  "Conversational",
-  "Formal tone",
-
-  // Format — response format rules +36.4pp gap
-  "Bullet point answers",
-  "Step-by-step guides",
-  "Short & scannable",
-  "Detailed responses",
-  "Adaptive length",
-];
-
-const CHIPS_INITIAL_VISIBLE = 6;
-
-type SuggestionCategory = "role" | "tone" | "format" | "guardrails" | "behavior";
+type SuggestionCategory =
+  | "support" | "expert" | "ops" | "coaching" | "content"
+  | "guardrails" | "behavior" | "tone" | "format";
 
 const SUGGESTION_META: Record<string, { icon: string; category: SuggestionCategory }> = {
-  // Role
-  "Customer support":         { icon: "🎧", category: "role"       },
-  "Knowledge base Q&A":       { icon: "📚", category: "role"       },
-  "Education & training":     { icon: "🎓", category: "role"       },
-  "Domain expert":            { icon: "🧠", category: "role"       },
-  "Lead capture":             { icon: "🎯", category: "role"       },
-  "Coaching":                 { icon: "🤝", category: "role"       },
-  // Guardrails
+  // ── Archetypes ──────────────────────────────────────────────────────────────
+  // Support — #1 by popularity (22%), gateway archetype
+  "Customer support":         { icon: "🎧", category: "support"    },
+  "Knowledge base Q&A":       { icon: "📖", category: "support"    },
+  "Book a call CTA":          { icon: "📞", category: "support"    },
+  "Match user language":      { icon: "🌐", category: "support"    },
+  "Collect contact info":     { icon: "✉️",  category: "support"    },
+  "Friendly greeting":        { icon: "👋", category: "support"    },
+  "Lead capture":             { icon: "🎯", category: "support"    },
+  "Education & training":     { icon: "🎓", category: "support"    },
+
+  // Expert — Domain advisor goldmine (5.2 growth opp #1)
+  "Legal Q&A agent":          { icon: "⚖️",  category: "expert"     },
+  "Tax advisor":              { icon: "💰", category: "expert"     },
+  "Medical info guide":       { icon: "🏥", category: "expert"     },
+  "Add disclaimer logic":     { icon: "⚠️",  category: "expert"     },
+  "Cite authoritative sources":{ icon:"📚", category: "expert"     },
+  "Domain-only scope":        { icon: "🔒", category: "expert"     },
+  "Structured advice format": { icon: "📋", category: "expert"     },
+  "Domain expert":            { icon: "🧠", category: "expert"     },
+
+  // Ops — Internal ops & HR enterprise potential (5.2 growth opp #2)
+  "HR policy bot":            { icon: "👥", category: "ops"        },
+  "Onboarding assistant":     { icon: "🧑‍💼", category: "ops"        },
+  "SOP documentation":        { icon: "📄", category: "ops"        },
+  "Workflow guide":           { icon: "🔄", category: "ops"        },
+  "IT helpdesk":              { icon: "🎫", category: "ops"        },
+  "Internal use only":        { icon: "🔐", category: "ops"        },
+  "Data retrieval agent":     { icon: "📊", category: "ops"        },
+  "Process automation":       { icon: "⚙️",  category: "ops"        },
+
+  // Coaching — fix churn (5.2 growth opp #3) with structured programs
+  "Goal-setting framework":   { icon: "🎯", category: "coaching"   },
+  "Structured check-ins":     { icon: "✅", category: "coaching"   },
+  "Progress tracking":        { icon: "📈", category: "coaching"   },
+  "Accountability prompts":   { icon: "🔁", category: "coaching"   },
+  "Session recap":            { icon: "📝", category: "coaching"   },
+  "Milestone celebrations":   { icon: "🏆", category: "coaching"   },
+  "Learning modules":         { icon: "🧠", category: "coaching"   },
+  "Motivation boosts":        { icon: "💪", category: "coaching"   },
+
+  // Content — brand & creative
+  "Content creator":          { icon: "✍️",  category: "content"    },
+  "Brand voice guide":        { icon: "🎨", category: "content"    },
+  "Social media copy":        { icon: "📱", category: "content"    },
+  "SEO writing":              { icon: "🔍", category: "content"    },
+  "Ideation assistant":       { icon: "💡", category: "content"    },
+  "Content calendar":         { icon: "📅", category: "content"    },
+
+  // ── Config tabs (original) ──────────────────────────────────────────────────
+  // Guardrails — biggest config gap +44.2pp
   "Don't make up info":       { icon: "✓",  category: "guardrails" },
   "Refuse off-topic":         { icon: "⊘",  category: "guardrails" },
   "No competitor talk":       { icon: "✕",  category: "guardrails" },
   "No medical/legal advice":  { icon: "⚠",  category: "guardrails" },
   "Stay in knowledge base":   { icon: "⊞",  category: "guardrails" },
   "Escalate to human":        { icon: "↗",  category: "guardrails" },
-  // Behavior
+
+  // Behavior — follow-up +41.9pp, citation +33.6pp gaps
   "Ask clarifying questions": { icon: "?",  category: "behavior"   },
   "Always cite sources":      { icon: "¶",  category: "behavior"   },
-  "Collect contact info":     { icon: "✉",  category: "behavior"   },
-  "Book a call CTA":          { icon: "📞", category: "behavior"   },
-  "Match user language":      { icon: "🌐", category: "behavior"   },
-  "Friendly greeting":        { icon: "👋", category: "behavior"   },
-  // Tone
+  "Ask for feedback":         { icon: "★",  category: "behavior"   },
+  "Proactive suggestions":    { icon: "→",  category: "behavior"   },
+  "Summarise at end":         { icon: "≡",  category: "behavior"   },
+  "Confirm before acting":    { icon: "✓",  category: "behavior"   },
+
+  // Tone — taxonomy Q2 data
   "Professional tone":        { icon: "Aa", category: "tone"       },
   "Friendly & warm":          { icon: "✦",  category: "tone"       },
   "Concise & direct":         { icon: "→",  category: "tone"       },
   "Empathetic tone":          { icon: "♡",  category: "tone"       },
   "Conversational":           { icon: "≈",  category: "tone"       },
   "Formal tone":              { icon: "↑",  category: "tone"       },
-  // Format
+
+  // Format — response format rules +36.4pp gap
   "Bullet point answers":     { icon: "≡",  category: "format"     },
   "Step-by-step guides":      { icon: "1→", category: "format"     },
   "Short & scannable":        { icon: "~",  category: "format"     },
   "Detailed responses":       { icon: "≣",  category: "format"     },
   "Adaptive length":          { icon: "◎",  category: "format"     },
+  "Use headers & sections":   { icon: "§",  category: "format"     },
 };
 
-const CATEGORY_CONFIG: Record<SuggestionCategory, { chip: string }> = {
-  role:       { chip: "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:border-indigo-400 dark:hover:border-indigo-600" },
-  guardrails: { chip: "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/60 text-violet-800 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600" },
-  behavior:   { chip: "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 hover:border-rose-400 dark:hover:border-rose-600" },
-  tone:       { chip: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-400 dark:hover:border-amber-600" },
-  format:     { chip: "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 hover:border-sky-400 dark:hover:border-sky-600" },
+// Initial visible chips — mix of growth opps + popular archetypes + config classics
+const INITIAL_SUGGESTIONS = [
+  "Customer support", "Knowledge base Q&A", "Legal Q&A agent",
+  "Tax advisor", "HR policy bot", "Goal-setting framework",
+  "Don't make up info", "Professional tone", "Bullet point answers",
+  "Escalate to human", "Empathetic tone", "Always cite sources",
+];
+
+const CHIPS_INITIAL_VISIBLE = 6;
+
+const CATEGORY_CONFIG: Record<SuggestionCategory, { chip: string; label: string; dot: string }> = {
+  // Archetypes
+  support:    { label: "Support",    dot: "bg-teal-400",   chip: "bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/40 hover:border-teal-400 dark:hover:border-teal-600" },
+  expert:     { label: "Expert",     dot: "bg-indigo-400", chip: "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:border-indigo-400 dark:hover:border-indigo-600" },
+  ops:        { label: "Ops",        dot: "bg-slate-400",  chip: "bg-slate-50 dark:bg-slate-900/20 border-slate-200 dark:border-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/40 hover:border-slate-400 dark:hover:border-slate-600" },
+  coaching:   { label: "Coaching",   dot: "bg-amber-400",  chip: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-400 dark:hover:border-amber-600" },
+  content:    { label: "Content",    dot: "bg-rose-400",   chip: "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 hover:border-rose-400 dark:hover:border-rose-600" },
+  // Config
+  guardrails: { label: "Guardrails", dot: "bg-violet-400", chip: "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/60 text-violet-800 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600" },
+  behavior:   { label: "Behavior",   dot: "bg-sky-400",    chip: "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 hover:border-sky-400 dark:hover:border-sky-600" },
+  tone:       { label: "Tone",       dot: "bg-orange-400", chip: "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/60 text-orange-800 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40 hover:border-orange-400 dark:hover:border-orange-600" },
+  format:     { label: "Format",     dot: "bg-cyan-400",   chip: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800/60 text-cyan-800 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 hover:border-cyan-400 dark:hover:border-cyan-600" },
 };
 
 const DIFF_FIELD_LABELS: Partial<Record<keyof PersonaState, string>> = {
@@ -152,7 +175,50 @@ export default function BuilderChat({ state, onApply }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>(INITIAL_SUGGESTIONS);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAllChips, setShowAllChips] = useState(false);
-  const [activeTab, setActiveTab] = useState<SuggestionCategory | "all">("role");
+  const [chipsExpanded, setChipsExpanded] = useState(false);
+  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
+  const [phIndex, setPhIndex] = useState(0);
+  const [phVisible, setPhVisible] = useState(true);
+
+  const PLACEHOLDERS = [
+    "Make responses shorter and more direct…",
+    "Only answer questions about our product…",
+    "Always greet users warmly by first name…",
+    "Refuse to discuss competitor products…",
+    "Use bullet points for all answers…",
+    "Add a disclaimer when giving advice…",
+    "Speak in a friendly, casual tone…",
+  ];
+
+  useEffect(() => {
+    const cycle = setInterval(() => {
+      setPhVisible(false);
+      setTimeout(() => {
+        setPhIndex((i) => (i + 1) % PLACEHOLDERS.length);
+        setPhVisible(true);
+      }, 250);
+    }, 3200);
+    return () => clearInterval(cycle);
+  }, []);
+  const [tabsCanScrollRight, setTabsCanScrollRight] = useState(false);
+  const [tabsCanScrollLeft, setTabsCanScrollLeft] = useState(false);
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
+
+  function checkTabsScroll() {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+    setTabsCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    setTabsCanScrollLeft(el.scrollLeft > 2);
+  }
+
+  function scrollTabsRight() {
+    tabsScrollRef.current?.scrollBy({ left: 120, behavior: "smooth" });
+  }
+
+  function scrollTabsLeft() {
+    tabsScrollRef.current?.scrollBy({ left: -120, behavior: "smooth" });
+  }
+  const [activeTab, setActiveTab] = useState<SuggestionCategory | "all" | "actions">("all");
   const [followUpText, setFollowUpText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
@@ -162,6 +228,10 @@ export default function BuilderChat({ state, onApply }: Props) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    checkTabsScroll();
+  }, [suggestionsCollapsed]);
 
   function handleUndo() {
     if (!prevStateRef.current) return;
@@ -223,6 +293,7 @@ export default function BuilderChat({ state, onApply }: Props) {
         setSuggestions(data.nextSuggestions);
         setShowAllChips(true);
         setActiveTab("all");
+        setChipsExpanded(false);
         setShowSuggestions(true);
       }
     } catch {
@@ -243,13 +314,18 @@ export default function BuilderChat({ state, onApply }: Props) {
     ? allChips
     : allChips.filter((s) => SUGGESTION_META[s]?.category === activeTab);
 
-  const TABS: { id: SuggestionCategory | "all"; label: string; activeClass: string }[] = [
+  const TABS: { id: SuggestionCategory | "all" | "actions"; label: string; activeClass: string }[] = [
     { id: "all",        label: "All",        activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "role",       label: "Role",       activeClass: "bg-indigo-500 text-white" },
-    { id: "guardrails", label: "Guardrails", activeClass: "bg-violet-500 text-white" },
-    { id: "behavior",   label: "Behavior",   activeClass: "bg-rose-500 text-white" },
-    { id: "tone",       label: "Tone",       activeClass: "bg-amber-500 text-white" },
-    { id: "format",     label: "Format",     activeClass: "bg-sky-500 text-white" },
+    { id: "support",    label: "Support",    activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "expert",     label: "Expert ✦",   activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "ops",        label: "Ops ✦",      activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "coaching",   label: "Coaching",   activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "content",    label: "Content",    activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "guardrails", label: "Guardrails", activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "behavior",   label: "Behavior",   activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "tone",       label: "Tone",       activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "format",     label: "Format",     activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "actions",    label: "Actions",    activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
   ];
   const isEmptyState = messages.length === 1 && messages[0].id === INIT_ID;
 
@@ -338,39 +414,125 @@ export default function BuilderChat({ state, onApply }: Props) {
 
       {/* Suggestion card — above input */}
       {showSuggestions && !loading && (
-        <div className="shrink-0 px-4 pt-3 pb-1 border-t border-gray-100 dark:border-[#1E3050]">
+        <div className="shrink-0 px-4 pt-2 pb-2 border-t border-gray-100 dark:border-[#1E3050]">
           <style>{`
             @keyframes suggest-in {
               0%   { opacity: 0; transform: translateY(10px) scale(0.98); }
               60%  { opacity: 1; transform: translateY(-2px) scale(1.005); }
               100% { opacity: 1; transform: translateY(0) scale(1); }
             }
+            @keyframes tab-in {
+              0%   { opacity: 0; transform: translateY(4px); }
+              100% { opacity: 1; transform: translateY(0); }
+            }
             @media (prefers-reduced-motion: no-preference) {
               .suggest-card { animation: suggest-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+              .tab-content   { animation: tab-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
             }
+            .tabs-scroll::-webkit-scrollbar { display: none; }
           `}</style>
-          <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] overflow-hidden">
+          <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] shadow-md dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden">
+
+            {/* Collapsed label-only mode */}
+            {suggestionsCollapsed ? (
+              <button
+                onClick={() => setSuggestionsCollapsed(false)}
+                className="w-full px-3 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-[#7A9BBF] hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors"
+              >
+                Suggestions
+              </button>
+            ) : (<>
 
             {/* Category tabs — only for initial suggestions */}
             {isInitialSuggestions && !followUpText && (
-              <div className="flex gap-1 px-3 pt-3 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
-                {TABS.map(({ id, label, activeClass }) => (
+              <div className="flex items-center gap-1 px-3 pt-2.5 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
+                {/* Left scroll chevron */}
+                {tabsCanScrollLeft && (
                   <button
-                    key={id}
-                    onClick={() => setActiveTab(id)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
-                      activeTab === id
-                        ? activeClass
-                        : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"
-                    }`}
+                    onClick={scrollTabsLeft}
+                    className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
                   >
-                    {label}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6"/>
+                    </svg>
                   </button>
-                ))}
+                )}
+                <div
+                  ref={tabsScrollRef}
+                  onScroll={checkTabsScroll}
+                  className="tabs-scroll flex gap-1 flex-1 overflow-x-auto min-w-0"
+                  style={{ scrollbarWidth: "none" }}
+                >
+                  {TABS.map(({ id, label, activeClass }) => (
+                    <button
+                      key={id}
+                      onClick={(e) => {
+                        setActiveTab(id);
+                        const btn = e.currentTarget as HTMLElement;
+                        const container = tabsScrollRef.current;
+                        if (!container) return;
+                        const btnRight = btn.offsetLeft + btn.offsetWidth;
+                        const visibleRight = container.scrollLeft + container.clientWidth - 32; // 32px chevron clearance
+                        const visibleLeft = container.scrollLeft + 32;
+                        if (btnRight > visibleRight) {
+                          container.scrollBy({ left: btnRight - visibleRight + 8, behavior: "smooth" });
+                        } else if (btn.offsetLeft < visibleLeft) {
+                          container.scrollBy({ left: btn.offsetLeft - visibleLeft - 8, behavior: "smooth" });
+                        }
+                      }}
+                      className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
+                        activeTab === id
+                          ? activeClass
+                          : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Right scroll chevron */}
+                {tabsCanScrollRight && (
+                  <button
+                    onClick={scrollTabsRight}
+                    className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                )}
+                {/* Expand / collapse icon */}
+                <button
+                    onClick={() => setChipsExpanded((v) => !v)}
+                    className="ml-1 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors shrink-0"
+                    title={chipsExpanded ? "Collapse" : "Expand"}
+                  >
+                    {chipsExpanded ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+                        <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                      </svg>
+                    )}
+                  </button>
+                {/* Minimize to labels */}
+                <button
+                  onClick={() => setSuggestionsCollapsed(true)}
+                  className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors shrink-0"
+                  title="Close"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
               </div>
             )}
 
-            <div className="px-4 py-3 space-y-3">
+            <div className="px-4 pt-3 pb-0 space-y-3">
             {/* Follow-up question */}
             {followUpText && (
               <div>
@@ -379,27 +541,84 @@ export default function BuilderChat({ state, onApply }: Props) {
               </div>
             )}
 
-            {/* Chips — fixed to 2 rows */}
-            <div className="flex flex-wrap items-start gap-1.5 overflow-hidden" style={{ height: "62px" }}>
-              {tabFilteredChips.map((item) => {
-                const meta = SUGGESTION_META[item];
-                const cfg = meta ? CATEGORY_CONFIG[meta.category] : null;
-                return (
-                  <button
-                    key={item}
-                    onClick={() => sendText(item)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-all duration-150 hover:scale-[1.04] hover:shadow-sm active:scale-[0.97] ${
-                      cfg
-                        ? cfg.chip
-                        : "bg-white dark:bg-[#111D30] border-gray-200 dark:border-[#1E3050] text-gray-600 dark:text-[#C8D8EE] hover:border-violet-400 hover:text-violet-700 dark:hover:border-violet-600 dark:hover:text-violet-300"
-                    }`}
-                  >
-                    {meta && <span className="font-bold opacity-60 text-[11px] leading-none">{meta.icon}</span>}
-                    {item}
+            {/* Content area — fixed height when collapsed, auto when expanded */}
+            <div style={{ height: chipsExpanded ? "35vh" : "110px", overflow: "hidden", transition: "height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1)" }}>
+            <div key={activeTab} className="tab-content h-full">
+            {activeTab === "actions" ? (
+              <div className="flex items-start gap-3 py-1">
+                <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center text-teal-500 dark:text-teal-400 shrink-0 text-sm">
+                  ⚡
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-[#C8D8EE]">Enhance your agent with actions.</p>
+                    <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800/60">Available soon</span>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-[#7A9BBF] leading-relaxed">Add capabilities like document analysis, response verification, lead capture, webpage awareness, custom CTAs, and web search.</p>
+                  <button className="mt-2 px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] hover:opacity-90 transition-opacity">
+                    Open Actions
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            ) : /* Chips */
+            chipsExpanded && activeTab === "all" ? (
+              /* Expanded "All" — grouped by archetype */
+              <div className="overflow-y-auto max-h-[35vh] pr-3">
+                {(["support","expert","ops","coaching","content","guardrails","behavior","tone","format"] as SuggestionCategory[]).map((cat) => {
+                  const items = allChips.filter((s) => SUGGESTION_META[s]?.category === cat);
+                  if (!items.length) return null;
+                  const cfg = CATEGORY_CONFIG[cat];
+                  return (
+                    <div key={cat} className="group/cat">
+                      <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-white dark:bg-[#111D30] -mx-1 px-1 -mt-3 pt-3 z-10 cursor-default">
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-150 group-hover/cat:scale-125 ${cfg.dot}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-[#7A9BBF] group-hover/cat:text-gray-600 dark:group-hover/cat:text-[#C8D8EE] transition-colors duration-150">{cfg.label}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pb-3 pl-0.5">
+                        {items.map((item) => {
+                          const meta = SUGGESTION_META[item];
+                          return (
+                            <button key={item} onClick={() => sendText(item)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-all duration-150 hover:scale-[1.04] hover:shadow-sm active:scale-[0.97] ${cfg.chip}`}>
+                              {meta && <span className="font-bold opacity-60 text-[11px] leading-none">{meta.icon}</span>}
+                              {item}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Collapsed or single-tab */
+              <div
+                className="relative"
+                style={{ height: "100%" }}
+              >
+                <div
+                  className={`tabs-scroll flex flex-wrap items-start gap-1.5 h-full pl-0.5 ${chipsExpanded || activeTab === "all" ? "overflow-y-auto" : "overflow-hidden"}`}
+                  style={{ scrollbarWidth: "none", ...( !chipsExpanded && activeTab !== "all" ? { maxHeight: "72px" } : {}) }}
+                >
+                  {tabFilteredChips.map((item) => {
+                    const meta = SUGGESTION_META[item];
+                    const cfg = meta ? CATEGORY_CONFIG[meta.category] : null;
+                    return (
+                      <button key={item} onClick={() => sendText(item)}
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-all duration-150 hover:scale-[1.04] hover:shadow-sm active:scale-[0.97] ${
+                          cfg ? cfg.chip : "bg-white dark:bg-[#111D30] border-gray-200 dark:border-[#1E3050] text-gray-600 dark:text-[#C8D8EE] hover:border-violet-400 hover:text-violet-700 dark:hover:border-violet-600 dark:hover:text-violet-300"
+                        }`}>
+                        {meta && <span className="font-bold opacity-60 text-[11px] leading-none">{meta.icon}</span>}
+                        {item}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            </div>{/* end tab-content */}
+            </div>{/* end content area */}
+
 
             {/* Undo */}
             {canUndo && (
@@ -414,28 +633,44 @@ export default function BuilderChat({ state, onApply }: Props) {
               </div>
             )}
             </div>
+            </>)}
           </div>
         </div>
       )}
 
       {/* Input */}
-      <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-[#1E3050] flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !loading) sendText(input); }}
-          placeholder="e.g. make responses shorter and more direct…"
-          disabled={loading}
-          className="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] disabled:opacity-50 transition-all"
-          autoFocus
-        />
+      <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-[#1E3050] flex gap-2 items-center">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !loading) sendText(input); }}
+            placeholder=""
+            disabled={loading}
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all"
+            autoFocus
+          />
+          {/* Animated placeholder — hidden when typing */}
+          {!input && (
+            <span
+              className="pointer-events-none absolute left-3.5 text-sm text-gray-400 dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
+              style={{
+                top: "50%",
+                opacity: phVisible ? 1 : 0,
+                transform: `translateY(${phVisible ? "-50%" : "calc(-50% + 6px)"})`,
+              }}
+            >
+              {PLACEHOLDERS[phIndex]}
+            </span>
+          )}
+        </div>
         <button
           onClick={() => sendText(input)}
           disabled={!input.trim() || loading}
           className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shrink-0"
         >
-          {loading ? "…" : "Apply"}
+          {loading ? "…" : "Send"}
         </button>
       </div>
     </div>
