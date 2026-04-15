@@ -28,7 +28,7 @@ export default function CompletionScore({ score }: CompletionScoreProps) {
       : "Fully configured";
 
   return (
-    <div className="p-3 bg-[#F5F5F5] dark:bg-[#111D30] rounded-xl space-y-2">
+    <div className="p-3 bg-white dark:bg-[#111D30] rounded-xl border border-gray-100 dark:border-[#1E3050] space-y-2">
       <div className="flex items-center justify-between text-xs">
         <span className="font-semibold text-gray-700 dark:text-[#C8D8EE]">Persona completeness</span>
         <span className={`font-semibold ${score === 5 ? "text-emerald-600" : score >= 3 ? "text-violet-600" : "text-amber-600"}`}>

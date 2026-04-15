@@ -22,49 +22,97 @@ interface Props {
 
 // ─── Suggestions metadata ─────────────────────────────────────────────────────
 
+// Sorted by strategic impact from agent_taxonomy_report.pdf:
+// Role first (JTBD = most fundamental), then biggest config gaps:
+// Guardrails +44pp, Behavior +41pp/+33pp, Format +36pp, Tone
 const INITIAL_SUGGESTIONS = [
-  // 1. Personality — who is this agent?
-  "Friendly style",
-  "Empathetic style",
-  "Technical style",
-  // 2. Tone — how does it sound?
-  "More casual tone",
-  "More formal tone",
-  // 3. Format — how does it structure answers?
+  // Role — JTBD (taxonomy top categories by popularity + engagement)
+  "Customer support",       // 22% popular, #1 category
+  "Knowledge base Q&A",     // +8.3pp new users, gateway category
+  "Education & training",   // 17.9% popular
+  "Domain expert",          // 5,425 avg prompts, highest engagement
+  "Lead capture",           // +2.4pp new users
+  "Coaching",               // +9.6pp new users
+
+  // Guardrails — biggest config gap +44.2pp
+  "Don't make up info",     // core accuracy guardrail
+  "Refuse off-topic",       // stay in scope
+  "No competitor talk",     // brand safety
+  "No medical/legal advice",// liability protection
+  "Stay in knowledge base", // KB-specific guardrail
+  "Escalate to human",      // escalation rules +30.9pp gap
+
+  // Behavior — follow-up +41.9pp, source citation +33.6pp gaps
+  "Ask clarifying questions", // follow-up questions gap
+  "Always cite sources",      // source citation gap
+  "Collect contact info",     // lead capture behavior
+  "Book a call CTA",          // CTA actions gap
+  "Match user language",      // language rules gap
+  "Friendly greeting",        // greeting script gap
+
+  // Tone — Q2 data from taxonomy report
+  "Professional tone",
+  "Friendly & warm",
+  "Concise & direct",
+  "Empathetic tone",
+  "Conversational",
+  "Formal tone",
+
+  // Format — response format rules +36.4pp gap
   "Bullet point answers",
   "Step-by-step guides",
-  // 4. Guardrails — what rules does it follow?
-  "Ask clarifying questions",
-  "Always cite sources",
-  "Don't make up info",
-  "Escalate when unsure",
-  "Refuse off-topic chat",
+  "Short & scannable",
+  "Detailed responses",
+  "Adaptive length",
 ];
 
 const CHIPS_INITIAL_VISIBLE = 6;
 
-type SuggestionCategory = "tone" | "format" | "rules" | "style";
+type SuggestionCategory = "role" | "tone" | "format" | "guardrails" | "behavior";
 
 const SUGGESTION_META: Record<string, { icon: string; category: SuggestionCategory }> = {
-  "More formal tone":         { icon: "Aa", category: "tone"   },
-  "More casual tone":         { icon: "≈",  category: "tone"   },
-  "Bullet point answers":     { icon: "≡",  category: "format" },
-  "Step-by-step guides":      { icon: "1→", category: "format" },
-  "Always cite sources":      { icon: "¶",  category: "rules"  },
-  "Ask clarifying questions": { icon: "?",  category: "rules"  },
-  "Don't make up info":       { icon: "✓",  category: "rules"  },
-  "Escalate when unsure":     { icon: "↗",  category: "rules"  },
-  "Refuse off-topic chat":    { icon: "⊘",  category: "rules"  },
-  "Friendly style":           { icon: "✦",  category: "style"  },
-  "Empathetic style":         { icon: "♡",  category: "style"  },
-  "Technical style":          { icon: "⚙",  category: "style"  },
+  // Role
+  "Customer support":         { icon: "🎧", category: "role"       },
+  "Knowledge base Q&A":       { icon: "📚", category: "role"       },
+  "Education & training":     { icon: "🎓", category: "role"       },
+  "Domain expert":            { icon: "🧠", category: "role"       },
+  "Lead capture":             { icon: "🎯", category: "role"       },
+  "Coaching":                 { icon: "🤝", category: "role"       },
+  // Guardrails
+  "Don't make up info":       { icon: "✓",  category: "guardrails" },
+  "Refuse off-topic":         { icon: "⊘",  category: "guardrails" },
+  "No competitor talk":       { icon: "✕",  category: "guardrails" },
+  "No medical/legal advice":  { icon: "⚠",  category: "guardrails" },
+  "Stay in knowledge base":   { icon: "⊞",  category: "guardrails" },
+  "Escalate to human":        { icon: "↗",  category: "guardrails" },
+  // Behavior
+  "Ask clarifying questions": { icon: "?",  category: "behavior"   },
+  "Always cite sources":      { icon: "¶",  category: "behavior"   },
+  "Collect contact info":     { icon: "✉",  category: "behavior"   },
+  "Book a call CTA":          { icon: "📞", category: "behavior"   },
+  "Match user language":      { icon: "🌐", category: "behavior"   },
+  "Friendly greeting":        { icon: "👋", category: "behavior"   },
+  // Tone
+  "Professional tone":        { icon: "Aa", category: "tone"       },
+  "Friendly & warm":          { icon: "✦",  category: "tone"       },
+  "Concise & direct":         { icon: "→",  category: "tone"       },
+  "Empathetic tone":          { icon: "♡",  category: "tone"       },
+  "Conversational":           { icon: "≈",  category: "tone"       },
+  "Formal tone":              { icon: "↑",  category: "tone"       },
+  // Format
+  "Bullet point answers":     { icon: "≡",  category: "format"     },
+  "Step-by-step guides":      { icon: "1→", category: "format"     },
+  "Short & scannable":        { icon: "~",  category: "format"     },
+  "Detailed responses":       { icon: "≣",  category: "format"     },
+  "Adaptive length":          { icon: "◎",  category: "format"     },
 };
 
 const CATEGORY_CONFIG: Record<SuggestionCategory, { chip: string }> = {
-  tone:   { chip: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-400 dark:hover:border-amber-600" },
-  format: { chip: "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 hover:border-sky-400 dark:hover:border-sky-600" },
-  rules:  { chip: "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/60 text-violet-800 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600" },
-  style:  { chip: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-400 dark:hover:border-emerald-600" },
+  role:       { chip: "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:border-indigo-400 dark:hover:border-indigo-600" },
+  guardrails: { chip: "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/60 text-violet-800 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600" },
+  behavior:   { chip: "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 hover:border-rose-400 dark:hover:border-rose-600" },
+  tone:       { chip: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-400 dark:hover:border-amber-600" },
+  format:     { chip: "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 hover:border-sky-400 dark:hover:border-sky-600" },
 };
 
 const DIFF_FIELD_LABELS: Partial<Record<keyof PersonaState, string>> = {
@@ -96,13 +144,15 @@ function computeDiff(before: PersonaState, patch: Partial<PersonaState>): DiffEn
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function BuilderChat({ state, onApply }: Props) {
+  const INIT_ID = "init";
   const [messages, setMessages] = useState<Message[]>([
-    { id: "init", role: "assistant", text: "What would you like to adjust? Pick a suggestion or describe it in your own words." },
+    { id: INIT_ID, role: "assistant", text: "What would you like to adjust? Pick a suggestion or describe it in your own words." },
   ]);
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>(INITIAL_SUGGESTIONS);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAllChips, setShowAllChips] = useState(false);
+  const [activeTab, setActiveTab] = useState<SuggestionCategory | "all">("role");
   const [followUpText, setFollowUpText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
@@ -171,7 +221,8 @@ export default function BuilderChat({ state, onApply }: Props) {
 
       if (data.nextSuggestions?.length) {
         setSuggestions(data.nextSuggestions);
-        setShowAllChips(true); // API suggestions are already few — show all
+        setShowAllChips(true);
+        setActiveTab("all");
         setShowSuggestions(true);
       }
     } catch {
@@ -185,13 +236,40 @@ export default function BuilderChat({ state, onApply }: Props) {
   }
 
   const allChips = suggestions;
-  const visibleChips = showAllChips ? allChips : allChips.slice(0, CHIPS_INITIAL_VISIBLE);
-  const hiddenCount = allChips.length - visibleChips.length;
+  const isInitialSuggestions = allChips.every((s) => SUGGESTION_META[s]);
+
+  // Filter by active tab, then apply show-more
+  const tabFilteredChips = activeTab === "all"
+    ? allChips
+    : allChips.filter((s) => SUGGESTION_META[s]?.category === activeTab);
+
+  const TABS: { id: SuggestionCategory | "all"; label: string; activeClass: string }[] = [
+    { id: "all",        label: "All",        activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "role",       label: "Role",       activeClass: "bg-indigo-500 text-white" },
+    { id: "guardrails", label: "Guardrails", activeClass: "bg-violet-500 text-white" },
+    { id: "behavior",   label: "Behavior",   activeClass: "bg-rose-500 text-white" },
+    { id: "tone",       label: "Tone",       activeClass: "bg-amber-500 text-white" },
+    { id: "format",     label: "Format",     activeClass: "bg-sky-500 text-white" },
+  ];
+  const isEmptyState = messages.length === 1 && messages[0].id === INIT_ID;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+
+        {/* Zero-data empty state */}
+        {isEmptyState ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 px-8 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-500 dark:text-violet-400 text-xl">
+              ✦
+            </div>
+            <p className="text-sm text-gray-500 dark:text-[#7A9BBF] leading-relaxed max-w-xs">
+              {messages[0].text}
+            </p>
+          </div>
+        ) : (
+        <>
         {messages.map((msg) => (
           <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div
@@ -254,6 +332,8 @@ export default function BuilderChat({ state, onApply }: Props) {
         )}
 
         <div ref={bottomRef} />
+        </>
+        )}
       </div>
 
       {/* Suggestion card — above input */}
@@ -269,8 +349,28 @@ export default function BuilderChat({ state, onApply }: Props) {
               .suggest-card { animation: suggest-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
             }
           `}</style>
-          <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] px-4 py-3 space-y-3">
+          <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] overflow-hidden">
 
+            {/* Category tabs — only for initial suggestions */}
+            {isInitialSuggestions && !followUpText && (
+              <div className="flex gap-1 px-3 pt-3 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
+                {TABS.map(({ id, label, activeClass }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
+                      activeTab === id
+                        ? activeClass
+                        : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="px-4 py-3 space-y-3">
             {/* Follow-up question */}
             {followUpText && (
               <div>
@@ -279,9 +379,9 @@ export default function BuilderChat({ state, onApply }: Props) {
               </div>
             )}
 
-            {/* Chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {visibleChips.map((item) => {
+            {/* Chips — fixed to 2 rows */}
+            <div className="flex flex-wrap items-start gap-1.5 overflow-hidden" style={{ height: "62px" }}>
+              {tabFilteredChips.map((item) => {
                 const meta = SUGGESTION_META[item];
                 const cfg = meta ? CATEGORY_CONFIG[meta.category] : null;
                 return (
@@ -299,16 +399,6 @@ export default function BuilderChat({ state, onApply }: Props) {
                   </button>
                 );
               })}
-
-              {/* Show more */}
-              {hiddenCount > 0 && (
-                <button
-                  onClick={() => setShowAllChips(true)}
-                  className="px-3 py-1.5 text-xs font-medium rounded-xl border border-dashed border-gray-200 dark:border-[#1E3050] text-gray-400 dark:text-[#7A9BBF] hover:border-gray-400 hover:text-gray-600 dark:hover:text-[#C8D8EE] transition-all duration-150"
-                >
-                  +{hiddenCount} more
-                </button>
-              )}
             </div>
 
             {/* Undo */}
@@ -323,6 +413,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}

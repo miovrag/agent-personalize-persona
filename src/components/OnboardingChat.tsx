@@ -454,9 +454,18 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
   const progressPct = totalSteps > 0 ? ((stepIndex) / totalSteps) * 100 : 0;
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 py-5 relative">
+      {/* Close button */}
+      <button
+        onClick={onSkip}
+        aria-label="Close setup"
+        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-all text-sm"
+      >
+        ✕
+      </button>
+
       {/* Progress bar */}
-      <div className="w-full mb-4 shrink-0">
+      <div className="w-full mb-4 shrink-0 pr-6">
         <div className="h-1 w-full bg-gray-200 dark:bg-[#162238] rounded-full overflow-hidden">
           <div
             className="h-full bg-violet-600 rounded-full transition-all duration-300"

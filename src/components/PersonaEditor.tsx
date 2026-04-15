@@ -47,6 +47,8 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [visibleModules, setVisibleModules] = useState<Set<string>>(new Set());
   const [chatMode, setChatMode] = useState<"user" | "builder">("builder");
+  const [showSettingsIntro, setShowSettingsIntro] = useState(false);
+  const settingsVisitedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -79,6 +81,13 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
     }, 1500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [instruction]);
+
+  useEffect(() => {
+    if (chatMode === "user" && !settingsVisitedRef.current) {
+      settingsVisitedRef.current = true;
+      setShowSettingsIntro(true);
+    }
+  }, [chatMode]);
 
   const updateState = useCallback((patch: Partial<PersonaState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -178,14 +187,8 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         {/* Left panel */}
         <div className="flex-1 flex flex-col max-w-[600px] bg-[#F5F5F5] dark:bg-[#0B1426] overflow-hidden">
 
-          {/* Fixed header — always same position */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-[#1E3050] shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 dark:text-[#7A9BBF]">✦</span>
-              <h2 className="text-base font-semibold text-gray-800 dark:text-[#C8D8EE]">
-                {chatMode === "builder" ? "Natural mode" : "Set Up Instructions For Your Agent"}
-              </h2>
-            </div>
+          {/* Mode toggle — centered below tab bar */}
+          <div className="shrink-0 flex justify-center px-6 py-3 border-b border-gray-200 dark:border-[#1E3050]">
             <ModeToggle chatMode={chatMode} onChange={setChatMode} />
           </div>
 
@@ -199,6 +202,60 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
               <div className="px-6 pt-6 pb-4">
                 <CompletionScore score={score} />
               </div>
+
+              {/* First-use intro */}
+              {showSettingsIntro && (
+                <div className="mx-4 mb-2">
+                  <style>{`
+                    @keyframes intro-in {
+                      0%   { opacity: 0; transform: translateY(8px) scale(0.98); }
+                      100% { opacity: 1; transform: translateY(0) scale(1); }
+                    }
+                    @media (prefers-reduced-motion: no-preference) {
+                      .settings-intro { animation: intro-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+                    }
+                  `}</style>
+                  <div className="settings-intro relative rounded-2xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 p-5">
+                    <button
+                      onClick={() => setShowSettingsIntro(false)}
+                      aria-label="Dismiss"
+                      className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full text-violet-300 dark:text-violet-600 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-all text-xs"
+                    >
+                      ✕
+                    </button>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-violet-500 dark:text-violet-400 text-base">✦</span>
+                      <span className="text-sm font-semibold text-violet-800 dark:text-violet-300">Fine-tune every detail</span>
+                    </div>
+                    <p className="text-xs text-violet-700 dark:text-violet-400 leading-relaxed mb-4">
+                      Each section below controls a specific aspect of your agent. Changes sync to the preview instantly — no need to publish to test.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { icon: "👤", label: "Identity",    desc: "Role, mission & audience" },
+                        { icon: "🎨", label: "Personality", desc: "Tone & communication style" },
+                        { icon: "🛡", label: "Rules",       desc: "Guardrails & boundaries" },
+                        { icon: "📋", label: "Output",      desc: "Format & response length" },
+                      ].map(({ icon, label, desc }) => (
+                        <div key={label} className="flex items-start gap-2 bg-white/60 dark:bg-white/5 rounded-xl px-3 py-2.5">
+                          <span className="text-base leading-none mt-0.5">{icon}</span>
+                          <div>
+                            <p className="text-xs font-semibold text-violet-800 dark:text-violet-300">{label}</p>
+                            <p className="text-[10px] text-violet-600 dark:text-violet-500 leading-snug">{desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setShowSettingsIntro(false)}
+                      className="mt-4 w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-colors"
+                    >
+                      Got it, let me explore
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {showOnboarding && (
                 <OnboardingChat
                   agentName={state.agentName}
