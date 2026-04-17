@@ -653,46 +653,49 @@ export default function BuilderChat({ state, onApply }: Props) {
                 <div className="shrink-0 flex items-center gap-1 pr-2 pt-2.5 pb-2">
                   {/* Sort button */}
                   <div ref={sortMenuRef}>
+                    <Tip label="Sort">
+                      <button
+                        onClick={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setSortMenuPos({ top: rect.top - 8, right: window.innerWidth - rect.right });
+                          setSortMenuOpen((v) => !v);
+                        }}
+                        className={`p-1 rounded-md transition-colors ${sortMenuOpen ? "bg-gray-100 dark:bg-[#1E3050] text-gray-700 dark:text-[#C8D8EE]" : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/>
+                        </svg>
+                      </button>
+                    </Tip>
+                  </div>
+                  <Tip label={chipsExpanded ? "Collapse" : "Expand"}>
                     <button
-                      onClick={(e) => {
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setSortMenuPos({ top: rect.top - 8, right: window.innerWidth - rect.right });
-                        setSortMenuOpen((v) => !v);
-                      }}
-                      className={`p-1 rounded-md transition-colors ${sortMenuOpen ? "bg-gray-100 dark:bg-[#1E3050] text-gray-700 dark:text-[#C8D8EE]" : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"}`}
-                      title="Sort chips"
+                      onClick={() => setChipsExpanded((v) => !v)}
+                      className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                    >
+                      {chipsExpanded ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+                          <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                        </svg>
+                      )}
+                    </button>
+                  </Tip>
+                  <Tip label="Minimize">
+                    <button
+                      onClick={() => setSuggestionsCollapsed(true)}
+                      className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/>
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                       </svg>
                     </button>
-                  </div>
-                  <button
-                    onClick={() => setChipsExpanded((v) => !v)}
-                    className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
-                    title={chipsExpanded ? "Collapse" : "Expand"}
-                  >
-                    {chipsExpanded ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
-                        <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setSuggestionsCollapsed(true)}
-                    className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
-                    title="Close"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
+                  </Tip>
                 </div>
               </div>
             )}
@@ -874,6 +877,18 @@ export default function BuilderChat({ state, onApply }: Props) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function Tip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative group/tip">
+      {children}
+      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded-lg bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] text-[10px] font-medium whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[300]">
+        {label}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[3px] border-transparent border-t-gray-800 dark:border-t-[#C8D8EE]" />
+      </div>
     </div>
   );
 }
