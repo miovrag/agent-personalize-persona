@@ -246,7 +246,7 @@ export default function PersonaEditor({
           ${mobileView === "settings" ? "flex" : "hidden"} xl:flex`}>
 
           {/* Mode toggle — centered below tab bar */}
-          <div className="shrink-0 flex justify-center px-6 py-3 border-b border-gray-200 dark:border-[#1E3050]">
+          <div className="shrink-0 flex justify-center px-6 py-3">
             <ModeToggle chatMode={chatMode} onChange={setChatMode} />
           </div>
 

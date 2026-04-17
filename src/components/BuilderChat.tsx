@@ -226,7 +226,7 @@ export default function BuilderChat({ state, onApply }: Props) {
   ]);
   const [input, setInput] = useState("");
   const [chipsExpanded, setChipsExpanded] = useState(false);
-  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
+  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(true);
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [followUpSuggestions, setFollowUpSuggestions] = useState<string[] | null>(null);
   const [phIndex, setPhIndex] = useState(0);
@@ -436,11 +436,13 @@ export default function BuilderChat({ state, onApply }: Props) {
 
         {/* Zero-data empty state */}
         {isEmptyState ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 px-8 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-500 dark:text-violet-400 text-xl">
-              ✦
+          <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
+            {/* Logo with shimmer reflection */}
+            <div className="relative w-20 h-20 rounded-3xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center overflow-hidden logo-pulse">
+              <img src="/customgpt-mark.svg" alt="" width={44} height={44} className="star-icon relative z-10" />
+              <div className="logo-shimmer absolute inset-0 z-20 pointer-events-none" />
             </div>
-            <p className="text-sm text-gray-500 dark:text-[#7A9BBF] leading-relaxed max-w-xs">
+            <p className="text-sm text-gray-400 dark:text-[#7A9BBF] leading-relaxed max-w-xs">
               {messages[0].text}
             </p>
           </div>
@@ -557,7 +559,7 @@ export default function BuilderChat({ state, onApply }: Props) {
       </div>
 
       {/* Bottom dock — suggestions + input share a 2-col grid so card width = input width */}
-      <div className="shrink-0 border-t border-gray-200 dark:border-[#1E3050] px-4">
+      <div className="shrink-0 px-4">
         <style>{`
           @keyframes suggest-in {
             0%   { opacity: 0; transform: translateY(10px) scale(0.98); }
@@ -568,16 +570,37 @@ export default function BuilderChat({ state, onApply }: Props) {
             0%   { opacity: 0; transform: translateY(4px); }
             100% { opacity: 1; transform: translateY(0); }
           }
+          @keyframes star-spin {
+            0%   { transform: rotate(0deg) scale(1); }
+            80%  { transform: rotate(340deg) scale(1.08); }
+            100% { transform: rotate(360deg) scale(1); }
+          }
+          @keyframes logo-reflect {
+            0%   { transform: translateX(-220%) skewX(-18deg); opacity: 0; }
+            8%   { opacity: 1; }
+            92%  { opacity: 1; }
+            100% { transform: translateX(420%) skewX(-18deg); opacity: 0; }
+          }
+          @keyframes logo-breathe {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.15), 0 4px 24px rgba(139,92,246,0.08); }
+            50%       { box-shadow: 0 0 0 8px rgba(139,92,246,0), 0 8px 32px rgba(139,92,246,0.18); }
+          }
           @media (prefers-reduced-motion: no-preference) {
             .suggest-card { animation: suggest-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
             .tab-content   { animation: tab-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+            .star-icon { animation: star-spin 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s 1 both; }
+            .logo-shimmer {
+              background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.55) 50%, transparent 80%);
+              animation: logo-reflect 2.8s ease-in-out 1.2s infinite;
+            }
+            .logo-pulse { animation: logo-breathe 3s ease-in-out infinite; }
           }
           .tabs-scroll::-webkit-scrollbar { display: none; }
         `}</style>
         <div className="flex flex-col">
 
           {/* Suggestions card — full width */}
-          <div className="pt-2 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
+          <div className="pt-2 pb-2">
           <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] shadow-md dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-visible">
 
             {/* Collapsed label-only mode */}
@@ -755,15 +778,15 @@ export default function BuilderChat({ state, onApply }: Props) {
             ) : (
               /* Collapsed or single-tab */
               <div
-                className="relative"
+                className="flex flex-col"
                 style={{ height: "100%" }}
               >
                 {activeTab in CATEGORY_CONFIG && (
-                  <p className="text-[10px] text-gray-400 dark:text-[#7A9BBF] leading-relaxed mb-2">{CATEGORY_CONFIG[activeTab as SuggestionCategory].desc}</p>
+                  <p className="shrink-0 text-[10px] text-gray-400 dark:text-[#7A9BBF] leading-relaxed mb-2">{CATEGORY_CONFIG[activeTab as SuggestionCategory].desc}</p>
                 )}
                 <div
-                  className={`tabs-scroll flex flex-wrap items-start content-start gap-1.5 pl-0.5 overflow-x-hidden ${chipsExpanded || activeTab === "all" ? "overflow-y-auto" : "overflow-y-hidden"}`}
-                  style={{ scrollbarWidth: "none", ...( !chipsExpanded && activeTab !== "all" ? { maxHeight: "56px" } : {}) }}
+                  className={`tabs-scroll flex-1 flex flex-wrap items-start content-start gap-1.5 pl-0.5 overflow-x-hidden overflow-y-auto`}
+                  style={{ scrollbarWidth: "none" }}
                 >
                   {tabFilteredChips.map((item) => {
                     const meta = SUGGESTION_META[item];
@@ -802,7 +825,7 @@ export default function BuilderChat({ state, onApply }: Props) {
           </div>
           {/* Input + Send — flex row */}
           <div className="py-3 flex items-center gap-2">
-            <div className="relative flex-1 min-w-0">
+            <div className="relative flex-1 min-w-0 flex items-center">
               <textarea
                 rows={1}
                 value={input}
@@ -819,7 +842,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                 }}
                 placeholder=""
                 disabled={loading}
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all resize-none overflow-hidden leading-relaxed"
+                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all resize-none overflow-hidden leading-5"
                 id="builder-input"
                 style={{ maxHeight: "8rem" }}
                 autoFocus
