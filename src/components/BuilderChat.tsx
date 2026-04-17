@@ -605,12 +605,17 @@ export default function BuilderChat({ state, onApply }: Props) {
 
             {/* Collapsed label-only mode */}
             {suggestionsCollapsed ? (
-              <button
-                onClick={() => setSuggestionsCollapsed(false)}
-                className="w-full px-3 py-2 text-left text-[11px] font-semibold text-gray-400 dark:text-[#7A9BBF] hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors"
-              >
-                Suggestions
-              </button>
+              <Tip label="Open suggestions">
+                <button
+                  onClick={() => setSuggestionsCollapsed(false)}
+                  className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-semibold text-gray-400 dark:text-[#7A9BBF] hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors rounded-2xl"
+                >
+                  <span>CustomGPT.ai suggestions</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="18 15 12 9 6 15"/>
+                  </svg>
+                </button>
+              </Tip>
             ) : (<>
 
             {/* Category tabs */}
@@ -908,7 +913,7 @@ function Tip({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="relative group/tip">
       {children}
-      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded-lg bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] text-[10px] font-medium whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[300]">
+      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded-lg bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] text-[10px] font-medium whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 delay-0 group-hover/tip:delay-500 z-[300]">
         {label}
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-[3px] border-transparent border-t-gray-800 dark:border-t-[#C8D8EE]" />
       </div>
