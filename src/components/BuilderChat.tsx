@@ -241,6 +241,12 @@ export default function BuilderChat({ state, onApply }: Props) {
     checkTabsScroll();
   }, [suggestionsCollapsed]);
 
+  useEffect(() => {
+    checkTabsScroll();
+    window.addEventListener("resize", checkTabsScroll);
+    return () => window.removeEventListener("resize", checkTabsScroll);
+  }, []);
+
   function handleUndo() {
     if (!prevStateRef.current) return;
     onApply(prevStateRef.current);
@@ -474,9 +480,9 @@ export default function BuilderChat({ state, onApply }: Props) {
           }
           .tabs-scroll::-webkit-scrollbar { display: none; }
         `}</style>
-        <div className="grid gap-x-2" style={{ gridTemplateColumns: "1fr auto" }}>
+        <div className="flex flex-col">
 
-          {/* Row 1 col 1 — suggestions card */}
+          {/* Suggestions card — full width */}
           <div className="pt-2 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
           <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] shadow-md dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden">
 
@@ -492,66 +498,68 @@ export default function BuilderChat({ state, onApply }: Props) {
 
             {/* Category tabs */}
             {(
-              <div className="flex items-center gap-1 px-3 pt-2.5 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
-                {/* Left scroll chevron */}
-                {tabsCanScrollLeft && (
-                  <button
-                    onClick={scrollTabsLeft}
-                    className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="15 18 9 12 15 6"/>
-                    </svg>
-                  </button>
-                )}
-                <div
-                  ref={tabsScrollRef}
-                  onScroll={checkTabsScroll}
-                  className="tabs-scroll flex gap-1 flex-1 overflow-x-auto min-w-0"
-                  style={{ scrollbarWidth: "none" }}
-                >
-                  {TABS.map(({ id, label, activeClass }) => (
+              <div className="flex items-center border-b border-gray-100 dark:border-[#1E3050]">
+                {/* Scrollable tabs — flex-1 min-w-0 overflow-hidden so it never pushes action buttons off-screen */}
+                <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden px-3 pt-2.5 pb-2">
+                  {tabsCanScrollLeft && (
                     <button
-                      key={id}
-                      onClick={(e) => {
-                        setActiveTab(id);
-                        const btn = e.currentTarget as HTMLElement;
-                        const container = tabsScrollRef.current;
-                        if (!container) return;
-                        const btnRight = btn.offsetLeft + btn.offsetWidth;
-                        const visibleRight = container.scrollLeft + container.clientWidth - 32; // 32px chevron clearance
-                        const visibleLeft = container.scrollLeft + 32;
-                        if (btnRight > visibleRight) {
-                          container.scrollBy({ left: btnRight - visibleRight + 8, behavior: "smooth" });
-                        } else if (btn.offsetLeft < visibleLeft) {
-                          container.scrollBy({ left: btn.offsetLeft - visibleLeft - 8, behavior: "smooth" });
-                        }
-                      }}
-                      className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
-                        activeTab === id
-                          ? activeClass
-                          : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"
-                      }`}
+                      onClick={scrollTabsLeft}
+                      className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
                     >
-                      {label}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                      </svg>
                     </button>
-                  ))}
-                </div>
-                {/* Right scroll chevron */}
-                {tabsCanScrollRight && (
-                  <button
-                    onClick={scrollTabsRight}
-                    className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                  )}
+                  <div
+                    ref={tabsScrollRef}
+                    onScroll={checkTabsScroll}
+                    className="tabs-scroll flex gap-1 flex-1 overflow-x-auto min-w-0"
+                    style={{ scrollbarWidth: "none" }}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                )}
-                {/* Expand / collapse icon */}
-                <button
+                    {TABS.map(({ id, label, activeClass }) => (
+                      <button
+                        key={id}
+                        onClick={(e) => {
+                          setActiveTab(id);
+                          const btn = e.currentTarget as HTMLElement;
+                          const container = tabsScrollRef.current;
+                          if (!container) return;
+                          const btnRight = btn.offsetLeft + btn.offsetWidth;
+                          const visibleRight = container.scrollLeft + container.clientWidth - 32;
+                          const visibleLeft = container.scrollLeft + 32;
+                          if (btnRight > visibleRight) {
+                            container.scrollBy({ left: btnRight - visibleRight + 8, behavior: "smooth" });
+                          } else if (btn.offsetLeft < visibleLeft) {
+                            container.scrollBy({ left: btn.offsetLeft - visibleLeft - 8, behavior: "smooth" });
+                          }
+                        }}
+                        className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
+                          activeTab === id
+                            ? activeClass
+                            : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {tabsCanScrollRight && (
+                    <button
+                      onClick={scrollTabsRight}
+                      className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {/* Action buttons — shrink-0 sibling, always fully visible */}
+                <div className="shrink-0 flex items-center gap-1 pr-2 pt-2.5 pb-2">
+                  <button
                     onClick={() => setChipsExpanded((v) => !v)}
-                    className="ml-1 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors shrink-0"
+                    className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
                     title={chipsExpanded ? "Collapse" : "Expand"}
                   >
                     {chipsExpanded ? (
@@ -566,20 +574,20 @@ export default function BuilderChat({ state, onApply }: Props) {
                       </svg>
                     )}
                   </button>
-                {/* Minimize to labels */}
-                <button
-                  onClick={() => setSuggestionsCollapsed(true)}
-                  className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors shrink-0"
-                  title="Close"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
+                  <button
+                    onClick={() => setSuggestionsCollapsed(true)}
+                    className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                    title="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             )}
 
-            <div className="px-4 pt-3 pb-0 space-y-3">
+            <div className="px-4 pt-3 pb-0 space-y-3 w-full overflow-x-hidden">
             {/* Content area — fixed height when collapsed, auto when expanded */}
             <div style={{ height: chipsExpanded ? "35vh" : "110px", overflow: "hidden", transition: "height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1)" }}>
             <div key={activeTab} className="tab-content h-full">
@@ -636,7 +644,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                 style={{ height: "100%" }}
               >
                 <div
-                  className={`tabs-scroll flex flex-wrap items-start gap-1.5 h-full pl-0.5 ${chipsExpanded || activeTab === "all" ? "overflow-y-auto" : "overflow-hidden"}`}
+                  className={`tabs-scroll flex flex-wrap items-start content-start gap-1.5 h-full pl-0.5 overflow-x-hidden ${chipsExpanded || activeTab === "all" ? "overflow-y-auto" : "overflow-y-hidden"}`}
                   style={{ scrollbarWidth: "none", ...( !chipsExpanded && activeTab !== "all" ? { maxHeight: "72px" } : {}) }}
                 >
                   {tabFilteredChips.map((item) => {
@@ -675,45 +683,42 @@ export default function BuilderChat({ state, onApply }: Props) {
             </>)}
           </div>
           </div>
-          {/* Row 1 col 2 — spacer matches Send button column */}
-          <div className="border-b border-gray-100 dark:border-[#1E3050]" />
-
-          {/* Row 2 col 1 — input */}
-          <div className="py-3 relative">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !loading) sendText(input); }}
-              placeholder=""
-              disabled={loading}
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all"
-              autoFocus
-            />
-            {/* Animated placeholder — hidden when typing */}
-            {!input && (
-              <span
-                className="pointer-events-none absolute left-3.5 text-sm text-gray-400 dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
-                style={{
-                  top: "50%",
-                  opacity: phVisible ? 1 : 0,
-                  transform: `translateY(${phVisible ? "-50%" : "calc(-50% + 6px)"})`,
-                }}
-              >
-                {PLACEHOLDERS[phIndex]}
-              </span>
-            )}
+          {/* Input + Send — flex row */}
+          <div className="py-3 flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !loading) sendText(input); }}
+                placeholder=""
+                disabled={loading}
+                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all"
+                autoFocus
+              />
+              {!input && (
+                <span
+                  className="pointer-events-none absolute left-3.5 text-sm text-gray-400 dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
+                  style={{
+                    top: "50%",
+                    opacity: phVisible ? 1 : 0,
+                    transform: `translateY(${phVisible ? "-50%" : "calc(-50% + 6px)"})`,
+                  }}
+                >
+                  {PLACEHOLDERS[phIndex]}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => sendText(input)}
+              disabled={!input.trim() || loading}
+              className="shrink-0 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+            >
+              {loading ? "…" : "Send"}
+            </button>
           </div>
-          {/* Row 2 col 2 — Send button */}
-          <button
-            onClick={() => sendText(input)}
-            disabled={!input.trim() || loading}
-            className="self-center px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            {loading ? "…" : "Send"}
-          </button>
 
-        </div>{/* end grid */}
+        </div>{/* end flex col */}
       </div>{/* end bottom dock */}
     </div>
   );

@@ -2,14 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
-import { OUTPUT_STYLE_OPTIONS } from "./types";
 import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
-import StructuredIdentity from "./StructuredIdentity";
-import ToneSlider from "./ToneSlider";
-import StyleChips from "./StyleChips";
-import GuardrailTags from "./GuardrailTags";
-import BehaviorToggles from "./BehaviorToggles";
-import OutcomeCards from "./OutcomeCards";
 import AdvancedToggle from "./AdvancedToggle";
 import CompletionScore from "./CompletionScore";
 import PresetManager from "./PresetManager";
@@ -256,85 +249,6 @@ export default function PersonaEditor({
 
             <div className="p-6 space-y-6">
 
-              {/* 1. Identity */}
-              <Section number={1} label="Identity">
-                <StructuredIdentity
-                  role={state.role}
-                  mission={state.mission}
-                  audience={state.audience}
-                  onChange={(patch) => updateState(patch)}
-                />
-              </Section>
-
-              {/* 2. Personality */}
-              <Section number={2} label="Personality">
-                <div className="space-y-5">
-                  <ToneSlider value={state.tone} onChange={(tone) => updateState({ tone })} />
-                  <StyleChips selected={state.styles} onChange={(styles) => updateState({ styles })} />
-                </div>
-              </Section>
-
-              {/* 3. Behavior Rules */}
-              <Section number={3} label="Behavior Rules">
-                <div className="space-y-5">
-                  <GuardrailTags selected={state.guardrails} onChange={(guardrails) => updateState({ guardrails })} />
-                  <div className="border-t border-gray-100 dark:border-[#1E3050] pt-4">
-                    <BehaviorToggles
-                      selected={state.behaviorToggles}
-                      onChange={(behaviorToggles) => updateState({ behaviorToggles })}
-                    />
-                  </div>
-                </div>
-              </Section>
-
-              {/* 4. Output & Limits */}
-              <Section number={4} label="Output & Limits">
-                  <div className="space-y-5">
-                    <div className="space-y-2.5">
-                      <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
-                        Output style
-                        <span className="ml-2 text-xs font-normal text-gray-400 dark:text-[#7A9BBF]">How should responses be formatted?</span>
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {OUTPUT_STYLE_OPTIONS.map((opt) => {
-                          const isOn = state.outputStyle === opt.id;
-                          return (
-                            <button
-                              key={opt.id}
-                              onClick={() => updateState({ outputStyle: isOn ? "" : opt.id })}
-                              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
-                                ${isOn
-                                  ? "bg-violet-600 text-white border-violet-600"
-                                  : "bg-white dark:bg-[#162238] text-gray-500 dark:text-[#7A9BBF] border-gray-200 dark:border-[#1E3050] hover:border-violet-300 dark:hover:border-violet-700 hover:text-violet-700 dark:hover:text-violet-300"
-                                }`}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
-                        Boundaries
-                        <span className="ml-2 text-xs font-normal text-gray-400 dark:text-[#7A9BBF]">What should this agent never do?</span>
-                      </label>
-                      <textarea
-                        value={state.boundaries}
-                        onChange={(e) => updateState({ boundaries: e.target.value })}
-                        placeholder={'e.g. "Ne izmišlja propise, ne daje pravni savet kao advokat, ne tvrdi nešto bez osnova"'}
-                        rows={3}
-                        className="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] transition-all leading-relaxed"
-                      />
-                    </div>
-                  </div>
-                </Section>
-
-              {/* 5. Workflow Outcomes */}
-              <Section number={5} label="Workflow Outcomes">
-                <OutcomeCards selected={state.outcomes} onChange={(outcomes) => updateState({ outcomes })} />
-              </Section>
-
               {/* Detailed instructions */}
               <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] overflow-hidden">
                 <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 dark:border-[#1E3050]">
@@ -383,32 +297,7 @@ export default function PersonaEditor({
         {/* Right panel — preview */}
         <div className={`flex-col w-full xl:w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] min-h-0
           ${mobileView === "preview" ? "flex" : "hidden"} xl:flex`}>
-          <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${
-              syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
-              syncStatus === "synced"  ? "bg-emerald-400" :
-              syncStatus === "error"   ? "bg-red-500" :
-              "bg-gray-300"
-            }`} />
-            <span className={`text-xs ${syncStatus === "error" ? "text-red-500 font-medium" : "text-gray-400 dark:text-[#7A9BBF]"}`}>
-              {syncStatus === "syncing" ? "Applying changes..." :
-               syncStatus === "synced"  ? "Agent updated" :
-               syncStatus === "error"   ? "Sync failed — changes not saved" :
-               "Preview"}
-            </span>
-            {syncStatus === "error" && lastInstructionRef.current && (
-              <button
-                onClick={() => pushToAgent(
-                  lastInstructionRef.current!.instruction,
-                  lastInstructionRef.current!.questions
-                )}
-                className="ml-1 text-xs font-semibold text-red-500 hover:text-red-600 underline underline-offset-2 transition-colors"
-              >
-                Retry
-              </button>
-            )}
-          </div>
-          <div className="flex-1 min-h-0 overflow-hidden px-5 pb-6">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <CustomGPTWidget reloadKey={widgetKey} />
           </div>
         </div>
@@ -444,24 +333,3 @@ function ModeToggle({
   );
 }
 
-function Section({
-  number,
-  label,
-  children,
-}: {
-  number: number;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] overflow-hidden">
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 dark:border-[#1E3050]">
-        <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-[#162238] text-gray-500 dark:text-[#7A9BBF] text-xs font-bold flex items-center justify-center shrink-0">
-          {number}
-        </span>
-        <span className="heading-h5">{label}</span>
-      </div>
-      <div className="px-5 py-4">{children}</div>
-    </div>
-  );
-}
