@@ -1,8 +1,8 @@
 "use client";
 
-export default function Sidebar({ onClose }: { onClose?: () => void }) {
+export default function Sidebar({ onClose, onToggleCollapse }: { onClose?: () => void; onToggleCollapse?: () => void }) {
   return (
-    <aside className="w-[268px] shrink-0 flex flex-col h-full border-r border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#0B1426]">
+    <aside className="w-[268px] shrink-0 flex flex-col h-full border-r border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#0B1426] will-change-transform">
 
       {/* Logo row */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4">
@@ -22,7 +22,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           </button>
         )}
         {/* Layout toggle — desktop only */}
-        <button className="hidden xl:block hover:opacity-70 transition-opacity p-1 rounded">
+        <button onClick={onToggleCollapse} className="hidden xl:block hover:opacity-70 transition-opacity p-1 rounded">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <rect x="4" y="4" width="16" height="16" rx="2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M9 4V20" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

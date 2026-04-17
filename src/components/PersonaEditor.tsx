@@ -31,9 +31,13 @@ type SaveState = "idle" | "saving" | "saved";
 export default function PersonaEditor({
   initialName = "My Agent",
   onMenuClick,
+  sidebarCollapsed,
+  onExpandSidebar,
 }: {
   initialName?: string;
   onMenuClick?: () => void;
+  sidebarCollapsed?: boolean;
+  onExpandSidebar?: () => void;
 }) {
   const [state, setState] = useState<PersonaState>({ ...DEFAULT_STATE, agentName: initialName });
   const [instruction, setInstruction] = useState(() => generateInstruction({ ...DEFAULT_STATE, agentName: initialName }));
@@ -141,6 +145,19 @@ export default function PersonaEditor({
               <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </button>
+          {/* Expand sidebar — desktop only, shown when sidebar is collapsed */}
+          {sidebarCollapsed && (
+            <button
+              onClick={onExpandSidebar}
+              className="hidden xl:block shrink-0 p-1 -ml-1 rounded hover:opacity-70 transition-opacity"
+              aria-label="Expand sidebar"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="16" height="16" rx="2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 4V20" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
           <div className="min-w-0">
             <h1 className="heading-h5 mb-0 lg:mb-1 truncate">{state.agentName}</h1>
             <p className="hidden sm:block text-sm text-gray-400 dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
