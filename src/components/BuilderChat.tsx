@@ -755,8 +755,8 @@ export default function BuilderChat({ state, onApply }: Props) {
                 className="relative"
                 style={{ height: "100%" }}
               >
-                {activeTab !== "all" && activeTab !== "actions" && (
-                  <p className="text-[10px] text-gray-400 dark:text-[#7A9BBF] leading-relaxed mb-2">{CATEGORY_CONFIG[activeTab].desc}</p>
+                {activeTab in CATEGORY_CONFIG && (
+                  <p className="text-[10px] text-gray-400 dark:text-[#7A9BBF] leading-relaxed mb-2">{CATEGORY_CONFIG[activeTab as SuggestionCategory].desc}</p>
                 )}
                 <div
                   className={`tabs-scroll flex flex-wrap items-start content-start gap-1.5 pl-0.5 overflow-x-hidden ${chipsExpanded || activeTab === "all" ? "overflow-y-auto" : "overflow-y-hidden"}`}
