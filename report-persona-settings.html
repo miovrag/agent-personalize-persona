@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Od Textarea-e do AI Editor-a — Persona Settings Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #1a1a2e;
+    background: #fff;
+    padding: 48px 56px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* Cover */
+  .cover {
+    padding: 56px 0 48px;
+    border-bottom: 3px solid #7c3aed;
+    margin-bottom: 48px;
+  }
+  .cover-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7c3aed;
+    background: #f3eeff;
+    border: 1px solid #ddd6fe;
+    border-radius: 6px;
+    padding: 3px 10px;
+    margin-bottom: 16px;
+  }
+  .cover h1 {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #0f0f1a;
+    margin-bottom: 12px;
+  }
+  .cover-sub {
+    font-size: 15px;
+    color: #6b7280;
+    margin-bottom: 24px;
+    max-width: 560px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+  }
+  .cover-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cover-meta-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9ca3af;
+  }
+  .cover-meta-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  /* Conclusion box */
+  .conclusion {
+    background: linear-gradient(135deg, #7c3aed08, #6d28d908);
+    border: 1.5px solid #ddd6fe;
+    border-left: 4px solid #7c3aed;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+  .conclusion-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #7c3aed;
+    margin-bottom: 10px;
+  }
+  .conclusion p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #374151;
+  }
+  .conclusion .url {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7c3aed;
+    background: #f3eeff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+
+  /* Section headings */
+  h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f0f1a;
+    margin: 40px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid #f3f4f6;
+  }
+  h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    margin: 28px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h3::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: #7c3aed;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  p { margin-bottom: 10px; color: #374151; }
+
+  /* Before/After table */
+  .ba-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 12px;
+  }
+  .ba-table th {
+    padding: 8px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+  }
+  .ba-table th:first-child { background: #fef2f2; color: #b91c1c; border-radius: 8px 0 0 0; }
+  .ba-table th:last-child  { background: #f0fdf4; color: #15803d; border-radius: 0 8px 0 0; }
+  .ba-table td {
+    padding: 8px 14px;
+    vertical-align: top;
+    border-bottom: 1px solid #f3f4f6;
+    line-height: 1.55;
+    color: #374151;
+  }
+  .ba-table td:first-child { background: #fef2f205; }
+  .ba-table td:last-child  { background: #f0fdf405; }
+
+  /* Delivery chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: #f3eeff;
+    border: 1px solid #ddd6fe;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #5b21b6;
+  }
+  .chip-check { color: #059669; font-size: 10px; }
+
+  /* Architecture table */
+  .arch-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 12px;
+  }
+  .arch-table th {
+    background: #f9fafb;
+    padding: 8px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #6b7280;
+    text-align: left;
+    border-bottom: 1.5px solid #e5e7eb;
+  }
+  .arch-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: top;
+    line-height: 1.5;
+    color: #374151;
+  }
+  .arch-table td:first-child { font-weight: 600; color: #111827; }
+
+  /* Code block */
+  .code-block {
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 14px 0 20px;
+    overflow: hidden;
+  }
+  .code-block pre {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .code-comment { color: #64748b; }
+  .code-green   { color: #86efac; }
+  .code-red     { color: #fca5a5; }
+  .code-purple  { color: #c4b5fd; }
+  .code-yellow  { color: #fde68a; }
+
+  /* Bug cards */
+  .bug-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0 24px;
+  }
+  .bug-card {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+    background: #fafafa;
+  }
+  .bug-card-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ef4444;
+    margin-bottom: 6px;
+  }
+  .bug-card h4 { font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+  .bug-card p { font-size: 11px; color: #6b7280; margin: 0 0 8px; }
+  .bug-card .fix {
+    font-size: 11px;
+    font-weight: 600;
+    color: #059669;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: inline-block;
+  }
+
+  /* Deliverables section */
+  .deliverable-list {
+    list-style: none;
+    margin: 16px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 24px;
+  }
+  .deliverable-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: #374151;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .deliverable-list li::before {
+    content: '✓';
+    color: #059669;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Deploy block */
+  .deploy-block {
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 20px;
+    align-items: center;
+  }
+  .deploy-key {
+    font-family: monospace;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .deploy-val {
+    font-family: monospace;
+    font-size: 11px;
+    color: #e2e8f0;
+  }
+  .deploy-val a { color: #a78bfa; text-decoration: none; }
+
+  /* Page break */
+  .page-break { page-break-before: always; }
+
+  /* Divider */
+  hr { border: none; border-top: 1.5px solid #f3f4f6; margin: 36px 0; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-tag">CustomGPT.ai · Persona Settings</div>
+  <h1>Od Textarea-e do<br/>AI Editor-a</h1>
+  <p class="cover-sub">Kompletan izveštaj o redesignu Persona/Instructions taba — od polaznog dizajna do produkcijskog rešenja.</p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Branch</span>
+      <span class="cover-meta-value">persona-settings-no-setup-guide</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Produkcija</span>
+      <span class="cover-meta-value">agent-personalize-persona.vercel.app</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Datum</span>
+      <span class="cover-meta-value">April 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- CONCLUSION -->
+<div class="conclusion">
+  <div class="conclusion-label">Zaključak</div>
+  <p>Za ~2 dana rada isporučili smo kompletan redizajn Persona/Instructions taba unutar CustomGPT.ai agent editora. Krenuli smo od neresponsivnog, desktop-only layouta sa praznom textarea-om koja zbunjuje korisnike — i stigli do čistog, mobile-first interfejsa sa AI-driven chat modom, realtime sync-om, i UX-om koji jasno odvaja "šta agent radi" (Settings) od "kako agent priča" (Instructions).</p>
+  <a class="url" href="https://agent-personalize-persona.vercel.app">https://agent-personalize-persona.vercel.app</a>
+</div>
+
+<!-- SECTION 1: POLAZNA TAČKA -->
+<h2><span class="num">1</span> Polazna tačka — Originalni dizajn</h2>
+<p>Na polaznom screenshotu vidimo šta je postojalo u produkciji:</p>
+<table class="ba-table">
+  <tr>
+    <th>Pre</th>
+    <th>Problem</th>
+  </tr>
+  <tr>
+    <td>Jedna textarea za sistem prompt</td>
+    <td>Korisnik mora sam znati šta je dobar sistem prompt — blank page paralysis</td>
+  </tr>
+  <tr>
+    <td>"Set Up Instructions" header</td>
+    <td>Pasivan naslov, ništa ne objašnjava niti vodi korisnika</td>
+  </tr>
+  <tr>
+    <td>Persona Playbook + Best Practices kartice</td>
+    <td>Vode korisnika van stranice na eksternu dokumentaciju</td>
+  </tr>
+  <tr>
+    <td>Cancel / Delete / Save Changes dugmad</td>
+    <td>Standardni CRUD — nema preview feedback-a, nema znaka da li je promjena primenjena</td>
+  </tr>
+  <tr>
+    <td>Desktop-only layout</td>
+    <td>Na mobilnom i tabletu layout se lomi</td>
+  </tr>
+  <tr>
+    <td>Nema AI pomoći</td>
+    <td>Svaku instrukciju korisnik piše ručno, od nule</td>
+  </tr>
+</table>
+<p><strong>Suštinski problem:</strong> Samo napredni korisnici znaju kako da napišu efikasan sistem prompt. Svi ostali pišu nešto površno ili ne pišu ništa — agent ostaje nekonfigurisan.</p>
+
+<!-- SECTION 2: PROCES -->
+<div class="page-break"></div>
+<h2><span class="num">2</span> Proces — 9 koraka transformacije</h2>
+
+<h3>Korak 1 — Responsive layout (mobile-first)</h3>
+<p>Pomeren breakpoint sa <code>lg</code> (1024px) na <code>xl</code> (1280px) kao jedinstven prelaz između jednokolonskog i dvokolonskog layouta. Sidebar je pretvoren u <strong>fixed drawer</strong> sa overlay backdrop-om na mobilnom — na desktopu uvek vidljiv. Dodat bottom switcher (Settings / Preview) za mobilne korisnike.</p>
+
+<h3>Korak 2 — Uklanjanje Setup Guide-a</h3>
+<p>Uklonjen Setup Guide, Persona Playbook kartice i Best Practices kartice sa Settings taba. Sve što je vodilo korisnika van editora je izbačeno. Ostalo je 5 čistih sekcija: Identity, Personality, Behavior Rules, Output &amp; Limits, Workflow Outcomes.</p>
+
+<h3>Korak 3 — PXO analiza → 3 buga identifikovana i fiksirana</h3>
+<div class="bug-grid">
+  <div class="bug-card">
+    <div class="bug-card-label">Bug 1</div>
+    <h4>Silent sync failure</h4>
+    <p>Kad bi API call pao, status bi se tiho resetovao na <em>idle</em>. Korisnik ne bi znao da su promene izgubljene.</p>
+    <span class="fix">→ Error state + Retry dugme</span>
+  </div>
+  <div class="bug-card">
+    <div class="bug-card-label">Bug 2</div>
+    <h4>Breakpoint bug</h4>
+    <p>Layout se prelomio na <code>lg</code> (1024px) — na laptop ekranima 1100–1280px bio je broken.</p>
+    <span class="fix">→ Pomeren na xl (1280px)</span>
+  </div>
+  <div class="bug-card">
+    <div class="bug-card-label">Bug 3</div>
+    <h4>Publish bez zaštite</h4>
+    <p>Agent se mogao objaviti sa 0/5 completion score-om bez ikakvog upozorenja.</p>
+    <span class="fix">→ Two-step confirmation</span>
+  </div>
+</div>
+
+<h3>Korak 4 — Instructions mod (bivši "Natural" → "Persona Studio" → "Instructions")</h3>
+<p>Najvažnija promena. Dodat je AI chat mod pored Settings taba. Korisnik opisuje u slobodnom jeziku šta želi, AI parsira zahtev i aplicira strukturirani patch na PersonaState.</p>
+<p><strong>Kritičan tehnički problem — feedback loop:</strong> <code>generateInstruction()</code> je uključivao <code>additionalInstructions</code> u svom outputu. BuilderChat je pisao u to polje. Svaki novi prompt sadržao je prethodni output → beskonačan rast.</p>
+<p><strong>Fix:</strong> Uklonjen <code>additionalInstructions</code> iz <code>generateInstruction()</code> potpuno. U <code>PersonaEditor</code> useEffect-u, base instrukcija i detailed instrukcije se spajaju tek na kraju, neposredno pre slanja API-ju.</p>
+
+<h3>Korak 5 — Suggestions UX redesign</h3>
+<p>Originalni dizajn: flat lista chipova bez strukture. Novi dizajn: uvek vidljiva kartica iznad inputa sa category tabovima (All / Support / Expert / Ops / Coaching...), expand modom, i Undo dugmetom posle svake primenjene promene.</p>
+
+<h3>Korak 6 — Razdvajanje Regular vs. Follow-up sugestija</h3>
+<p><strong>Regular suggestions</strong> = uvek vidljiva kartica iznad inputa, koristi <code>INITIAL_SUGGESTIONS</code>. <strong>Follow-up suggestions</strong> = pojavljuju se inline u chat thread-u, ispod poslednje poruke, nestaju čim korisnik pošalje novu poruku.</p>
+
+<h3>Korak 7 — Diff tagovi kao read-only labele</h3>
+<p>Prikaz AI promena je originalno koristio chip dizajn koji je izgledao klikabilno. Korisnici su pokušavali da kliknu na izmene misleći da mogu da ih edituju. Fix: redesign u read-only kolapsibilne labele — "N changes ∨" tekst otvara listu sa <code>✓ dodata vrednost</code> / <code>~~uklonjena vrednost~~</code> bez border-a ili background-a koji sugeriše interaktivnost. Kolapsiran prikaz je default stanje.</p>
+
+<h3>Korak 8 — Očuvano stanje chata pri prelasku tabova</h3>
+<p>Kritičan UX bug: svaki prelaz Instructions → Settings → Instructions brisao je celu konverzaciju.</p>
+<p><strong>Uzrok:</strong> Ternary rendering <code>{condition ? &lt;BuilderChat/&gt; : &lt;Settings/&gt;}</code> unmountuje komponentu pri svakom switchu — React briše celo interno stanje.</p>
+<p><strong>Fix:</strong> CSS show/hide umesto conditional render. Oba panela su uvek mountovana u DOM-u, samo se menja <code>flex</code> / <code>hidden</code> klasa. Nula gubitka stanja.</p>
+
+<div class="code-block"><pre>
+<span class="code-comment">// Pre — brisalo stanje pri svakom switchu</span>
+<span class="code-red">{chatMode === "builder" ? &lt;BuilderChat/&gt; : &lt;Settings/&gt;}</span>
+
+<span class="code-comment">// Posle — oba uvek mountovana, CSS kontroliše vidljivost</span>
+<span class="code-green">&lt;div className={chatMode === "builder" ? "flex" : "hidden"}&gt;
+  &lt;BuilderChat/&gt;
+&lt;/div&gt;
+&lt;div className={chatMode === "user" ? "block" : "hidden"}&gt;
+  &lt;Settings/&gt;
+&lt;/div&gt;</span>
+</pre></div>
+
+<h3>Korak 9 — Suggestions card alignment prema input polju</h3>
+<p>Kada se kartica otvori, bila je šira od input polja — vizuelno neusklađena. Fix: <strong>CSS grid sa 2 kolone</strong> koji obuhvata i karticu i input. Kolona 1 = <code>1fr</code> (input), kolona 2 = <code>auto</code> (Send dugme). Kartica živi u koloni 1 — identična širina kao input, bez JavaScript-a.</p>
+
+<!-- SECTION 3: ARHITEKTURA -->
+<div class="page-break"></div>
+<h2><span class="num">3</span> Arhitektura — Ključne odluke</h2>
+<table class="arch-table">
+  <tr>
+    <th>Odluka</th>
+    <th>Alternativa</th>
+    <th>Zašto ovako</th>
+  </tr>
+  <tr>
+    <td>CSS show/hide za tab switch</td>
+    <td>Lift state u parent komponentu</td>
+    <td>Nula promene API-ja, BuilderChat ostaje enkapsuliran</td>
+  </tr>
+  <tr>
+    <td>additionalInstructions van generateInstruction()</td>
+    <td>Flag za loop detection</td>
+    <td>Čistije, nema edge case-ova, feedback loop je strukturno nemoguć</td>
+  </tr>
+  <tr>
+    <td>xl breakpoint (1280px)</td>
+    <td>Prilagodba po md/lg</td>
+    <td>Jedinstven prelaz, nema broken intermediate stanja</td>
+  </tr>
+  <tr>
+    <td>2-col CSS grid za suggestions+input</td>
+    <td>useRef width sync (JS)</td>
+    <td>Čisto CSS rešenje, responsive bez overhead-a</td>
+  </tr>
+  <tr>
+    <td>lastInstructionRef za retry</td>
+    <td>Re-generisanje iz state-a</td>
+    <td>Garantuje identičan payload pri retry-u, nema race condition-a</td>
+  </tr>
+</table>
+
+<!-- SECTION 4: ISPORUKE -->
+<h2><span class="num">4</span> Šta je isporučeno</h2>
+<ul class="deliverable-list">
+  <li>Potpuno responsivan layout (mobile → desktop)</li>
+  <li>AI chat za pisanje instrukcija (Instructions mod)</li>
+  <li>Realtime sync sa error state i Retry UI</li>
+  <li>Two-step publish zaštita (0/5 guard)</li>
+  <li>Suggestions kartica sa tabovima i expand modom</li>
+  <li>Follow-up sugestije inline u chat thread-u</li>
+  <li>Diff tagovi kao read-only kolapsibilni labeli</li>
+  <li>Očuvano stanje chata pri prelasku tabova</li>
+  <li>Suggestions kartica poravnata sa input poljem</li>
+  <li>Uklonjen Setup Guide i mrtvi sadržaj</li>
+</ul>
+
+<!-- SECTION 5: DEPLOY -->
+<h2><span class="num">5</span> Branch &amp; Deploy</h2>
+<div class="deploy-block">
+  <span class="deploy-key">Branch</span>
+  <span class="deploy-val">persona-settings-no-setup-guide</span>
+  <span class="deploy-key">Repo</span>
+  <span class="deploy-val"><a href="https://github.com/miovrag/agent-personalize-persona">github.com/miovrag/agent-personalize-persona</a></span>
+  <span class="deploy-key">Production</span>
+  <span class="deploy-val"><a href="https://agent-personalize-persona.vercel.app">https://agent-personalize-persona.vercel.app</a></span>
+  <span class="deploy-key">Platform</span>
+  <span class="deploy-val">Vercel (Next.js 16.2, App Router, Tailwind CSS v4)</span>
+</div>
+
+</body>
+</html>
