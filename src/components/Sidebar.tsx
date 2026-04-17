@@ -1,6 +1,6 @@
 "use client";
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside className="w-[268px] shrink-0 flex flex-col h-full border-r border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#0B1426]">
 
@@ -9,8 +9,20 @@ export default function Sidebar() {
         <div className="flex items-center">
           <img src="/customgpt-logo.svg" alt="CustomGPT.ai" height={23} className="h-[23px] w-auto" />
         </div>
-        {/* Layout toggle */}
-        <button className="hover:opacity-70 transition-opacity p-1 rounded">
+        {/* Close button — mobile only */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="xl:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E3050] text-gray-500 dark:text-[#7A9BBF] transition-colors"
+            aria-label="Close sidebar"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
+        {/* Layout toggle — desktop only */}
+        <button className="hidden xl:block hover:opacity-70 transition-opacity p-1 rounded">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <rect x="4" y="4" width="16" height="16" rx="2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M9 4V20" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

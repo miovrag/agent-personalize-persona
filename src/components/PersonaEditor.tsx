@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
 import { OUTPUT_STYLE_OPTIONS } from "./types";
 import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
-import OnboardingChat from "./OnboardingChat";
 import StructuredIdentity from "./StructuredIdentity";
 import ToneSlider from "./ToneSlider";
 import StyleChips from "./StyleChips";
@@ -36,58 +35,66 @@ const DEFAULT_STATE: PersonaState = {
 type SaveState = "idle" | "saving" | "saved";
 
 
-export default function PersonaEditor({ initialName = "My Agent" }: { initialName?: string }) {
+export default function PersonaEditor({
+  initialName = "My Agent",
+  onMenuClick,
+}: {
+  initialName?: string;
+  onMenuClick?: () => void;
+}) {
   const [state, setState] = useState<PersonaState>({ ...DEFAULT_STATE, agentName: initialName });
   const [instruction, setInstruction] = useState(() => generateInstruction({ ...DEFAULT_STATE, agentName: initialName }));
   const [hasCustomEdit, setHasCustomEdit] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isDirty, setIsDirty] = useState(false);
   const [widgetKey, setWidgetKey] = useState(0);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [visibleModules, setVisibleModules] = useState<Set<string>>(new Set());
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [publishConfirm, setPublishConfirm] = useState(false);
+  const lastInstructionRef = useRef<{ instruction: string; questions: string[] } | null>(null);
   const [chatMode, setChatMode] = useState<"user" | "builder">("builder");
-  const [showSettingsIntro, setShowSettingsIntro] = useState(false);
-  const settingsVisitedRef = useRef(false);
+  const [mobileView, setMobileView] = useState<"settings" | "preview">("settings");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!hasCustomEdit) {
-      const generated = generateInstruction(state);
-      setInstruction(generated);
+      const base = generateInstruction(state);
+      const full = state.additionalInstructions.trim()
+        ? `${base}\n\n## Detailed Instructions\n${state.additionalInstructions.trim()}`
+        : base;
+      setInstruction(full);
     }
     setIsDirty(true);
   }, [state]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setSyncStatus("syncing");
-      try {
-        await fetch("/api/update-persona", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            persona_instructions: instruction,
-            example_questions: generateExampleQuestions(state),
-          }),
-        });
-        setSyncStatus("synced");
-        setWidgetKey((k) => k + 1);
-        setTimeout(() => setSyncStatus("idle"), 2000);
-      } catch {
-        setSyncStatus("idle");
-      }
-    }, 1500);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [instruction]);
+  const pushToAgent = useCallback(async (personaInstruction: string, questions: string[]) => {
+    setSyncStatus("syncing");
+    try {
+      await fetch("/api/update-persona", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          persona_instructions: personaInstruction,
+          example_questions: questions,
+        }),
+      });
+      setSyncStatus("synced");
+      setWidgetKey((k) => k + 1);
+      setTimeout(() => setSyncStatus("idle"), 2000);
+    } catch {
+      setSyncStatus("error");
+      setTimeout(() => setSyncStatus("idle"), 8000);
+    }
+  }, []);
 
   useEffect(() => {
-    if (chatMode === "user" && !settingsVisitedRef.current) {
-      settingsVisitedRef.current = true;
-      setShowSettingsIntro(true);
-    }
-  }, [chatMode]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const questions = generateExampleQuestions(state);
+    lastInstructionRef.current = { instruction, questions };
+    debounceRef.current = setTimeout(() => {
+      pushToAgent(instruction, questions);
+    }, 1500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [instruction, pushToAgent]);
 
   const updateState = useCallback((patch: Partial<PersonaState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -95,13 +102,12 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
     setSaveState("idle");
   }, []);
 
-  const handleOnboardingSubmit = (patch: Partial<PersonaState>, modules: Set<string>) => {
-    setVisibleModules(modules);
-    setState((prev) => ({ ...prev, ...patch }));
-    setShowOnboarding(false);
-  };
-
   const handleSave = () => {
+    if (score === 0 && !publishConfirm) {
+      setPublishConfirm(true);
+      return;
+    }
+    setPublishConfirm(false);
     setSaveState("saving");
     setTimeout(() => {
       setSaveState("saved");
@@ -127,40 +133,64 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
       ? "bg-emerald-600 hover:bg-emerald-700"
       : "bg-violet-600 hover:bg-violet-700";
 
-  const show = (module: string) => visibleModules.has(module);
-
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-gray-200 dark:border-[#1E3050]">
-        <div>
-          <h1 className="heading-h5 mb-1">Personalize · {state.agentName}</h1>
-          <p className="text-sm text-gray-400 dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
+      <div className="flex items-center justify-between shrink-0 px-4 lg:px-6 py-3 lg:py-4 border-b border-gray-200 dark:border-[#1E3050]">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={onMenuClick}
+            className="xl:hidden shrink-0 p-1.5 -ml-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E3050] text-gray-600 dark:text-[#7A9BBF] transition-colors"
+            aria-label="Open menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <div className="min-w-0">
+            <h1 className="heading-h5 mb-0 lg:mb-1 truncate">{state.agentName}</h1>
+            <p className="hidden sm:block text-sm text-gray-400 dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {!showOnboarding && isDirty && saveState === "idle" && (
-            <span className="text-xs text-amber-500 font-medium flex items-center gap-1.5">
+        <div className="flex items-center gap-2 lg:gap-3 shrink-0">
+          {isDirty && saveState === "idle" && (
+            <span className="hidden sm:flex text-xs text-amber-500 font-medium items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
               Unsaved changes
             </span>
           )}
           <ThemeToggle />
-          {!showOnboarding && (
-            <>
-              <PresetManager currentState={state} onLoad={handleLoadPreset} />
+          <PresetManager currentState={state} onLoad={handleLoadPreset} />
+          {publishConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-500 font-medium hidden sm:block">No configuration — publish anyway?</span>
               <button
                 onClick={handleSave}
-                disabled={saveState === "saving"}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${saveBg} disabled:opacity-70`}
+                className="px-3 py-2 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C12 2 7 6 7 12H10L9 16L12 14L15 16L14 12H17C17 6 12 2 12 2Z" fill="white"/>
-                  <circle cx="12" cy="9" r="1.5" fill="currentColor" opacity="0.4"/>
-                  <path d="M9 16C9 17.5 10 19 12 20C14 19 15 17.5 15 16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                {saveLabel}
+                Publish
               </button>
-            </>
+              <button
+                onClick={() => setPublishConfirm(false)}
+                className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-600 dark:text-[#7A9BBF] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleSave}
+              disabled={saveState === "saving"}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${saveBg} disabled:opacity-70`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C12 2 7 6 7 12H10L9 16L12 14L15 16L14 12H17C17 6 12 2 12 2Z" fill="white"/>
+                <circle cx="12" cy="9" r="1.5" fill="currentColor" opacity="0.4"/>
+                <path d="M9 16C9 17.5 10 19 12 20C14 19 15 17.5 15 16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              {saveLabel}
+            </button>
           )}
         </div>
       </div>
@@ -181,88 +211,49 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
         ))}
       </div>
 
-      {/* Always two-panel layout */}
+      {/* Mobile Settings / Preview switcher */}
+      <div className="xl:hidden flex shrink-0 border-b border-gray-200 dark:border-[#1E3050]">
+        {(["settings", "preview"] as const).map((view) => (
+          <button
+            key={view}
+            onClick={() => setMobileView(view)}
+            className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-colors border-b-2
+              ${mobileView === view
+                ? "border-violet-600 text-violet-700 dark:text-violet-400"
+                : "border-transparent text-gray-500 dark:text-[#7A9BBF]"
+              }`}
+          >
+            {view}
+          </button>
+        ))}
+      </div>
+
+      {/* Two-panel layout */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left panel */}
-        <div className="flex-1 flex flex-col max-w-[600px] bg-[#F5F5F5] dark:bg-[#0B1426] overflow-hidden">
+        <div className={`flex-col flex-1 bg-[#F5F5F5] dark:bg-[#0B1426] overflow-hidden
+          ${mobileView === "settings" ? "flex" : "hidden"} xl:flex`}>
 
           {/* Mode toggle — centered below tab bar */}
           <div className="shrink-0 flex justify-center px-6 py-3 border-b border-gray-200 dark:border-[#1E3050]">
             <ModeToggle chatMode={chatMode} onChange={setChatMode} />
           </div>
 
-          {chatMode === "builder" ? (
-            /* Natural mode */
-            <BuilderChat state={state} onApply={(patch) => updateState(patch)} />
+          {/* Instructions — always mounted, hidden when not active */}
+          <div className={`flex-1 flex-col overflow-hidden ${chatMode === "builder" ? "flex" : "hidden"}`}>
+            <div className="flex-1 flex flex-col overflow-hidden w-full max-w-[640px] mx-auto">
+              <BuilderChat state={state} onApply={(patch) => updateState(patch)} />
+            </div>
+          </div>
 
-          ) : (
-            /* Settings mode — onboarding shown at top when active */
-            <div className="flex-1 overflow-y-auto">
+          {/* Settings — always mounted, hidden when not active */}
+          <div className={`flex-1 overflow-y-auto ${chatMode === "user" ? "block" : "hidden"}`}>
+            <div className="w-full max-w-[640px] mx-auto">
               <div className="px-6 pt-6 pb-4">
                 <CompletionScore score={score} />
               </div>
 
-              {/* First-use intro */}
-              {showSettingsIntro && (
-                <div className="mx-4 mb-2">
-                  <style>{`
-                    @keyframes intro-in {
-                      0%   { opacity: 0; transform: translateY(8px) scale(0.98); }
-                      100% { opacity: 1; transform: translateY(0) scale(1); }
-                    }
-                    @media (prefers-reduced-motion: no-preference) {
-                      .settings-intro { animation: intro-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
-                    }
-                  `}</style>
-                  <div className="settings-intro relative rounded-2xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 p-5">
-                    <button
-                      onClick={() => setShowSettingsIntro(false)}
-                      aria-label="Dismiss"
-                      className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full text-violet-300 dark:text-violet-600 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-all text-xs"
-                    >
-                      ✕
-                    </button>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-violet-500 dark:text-violet-400 text-base">✦</span>
-                      <span className="text-sm font-semibold text-violet-800 dark:text-violet-300">Fine-tune every detail</span>
-                    </div>
-                    <p className="text-xs text-violet-700 dark:text-violet-400 leading-relaxed mb-4">
-                      Each section below controls a specific aspect of your agent. Changes sync to the preview instantly — no need to publish to test.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { icon: "👤", label: "Identity",    desc: "Role, mission & audience" },
-                        { icon: "🎨", label: "Personality", desc: "Tone & communication style" },
-                        { icon: "🛡", label: "Rules",       desc: "Guardrails & boundaries" },
-                        { icon: "📋", label: "Output",      desc: "Format & response length" },
-                      ].map(({ icon, label, desc }) => (
-                        <div key={label} className="flex items-start gap-2 bg-white/60 dark:bg-white/5 rounded-xl px-3 py-2.5">
-                          <span className="text-base leading-none mt-0.5">{icon}</span>
-                          <div>
-                            <p className="text-xs font-semibold text-violet-800 dark:text-violet-300">{label}</p>
-                            <p className="text-[10px] text-violet-600 dark:text-violet-500 leading-snug">{desc}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setShowSettingsIntro(false)}
-                      className="mt-4 w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-colors"
-                    >
-                      Got it, let me explore
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {showOnboarding && (
-                <OnboardingChat
-                  agentName={state.agentName}
-                  onSubmit={handleOnboardingSubmit}
-                  onSkip={() => setShowOnboarding(false)}
-                />
-              )}
             <div className="p-6 space-y-6">
 
               {/* 1. Identity */}
@@ -275,18 +266,16 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
                 />
               </Section>
 
-              {/* 2. Personality — conditional */}
-              {show("personality") && (
-                <Section number={2} label="Personality">
-                  <div className="space-y-5">
-                    <ToneSlider value={state.tone} onChange={(tone) => updateState({ tone })} />
-                    <StyleChips selected={state.styles} onChange={(styles) => updateState({ styles })} />
-                  </div>
-                </Section>
-              )}
+              {/* 2. Personality */}
+              <Section number={2} label="Personality">
+                <div className="space-y-5">
+                  <ToneSlider value={state.tone} onChange={(tone) => updateState({ tone })} />
+                  <StyleChips selected={state.styles} onChange={(styles) => updateState({ styles })} />
+                </div>
+              </Section>
 
               {/* 3. Behavior Rules */}
-              <Section number={show("personality") ? 3 : 2} label="Behavior Rules">
+              <Section number={3} label="Behavior Rules">
                 <div className="space-y-5">
                   <GuardrailTags selected={state.guardrails} onChange={(guardrails) => updateState({ guardrails })} />
                   <div className="border-t border-gray-100 dark:border-[#1E3050] pt-4">
@@ -298,9 +287,8 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
                 </div>
               </Section>
 
-              {/* 4. Output & Limits — conditional */}
-              {show("output") && (
-                <Section number={show("personality") ? 4 : 3} label="Output & Limits">
+              {/* 4. Output & Limits */}
+              <Section number={4} label="Output & Limits">
                   <div className="space-y-5">
                     <div className="space-y-2.5">
                       <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
@@ -341,33 +329,24 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
                     </div>
                   </div>
                 </Section>
-              )}
 
-              {/* Outcomes — conditional */}
-              {show("outcomes") && (
-                <Section
-                  number={
-                    [show("personality"), show("output")].filter(Boolean).length +
-                    (show("personality") ? 3 : 2)
-                  }
-                  label="Workflow Outcomes"
-                >
-                  <OutcomeCards selected={state.outcomes} onChange={(outcomes) => updateState({ outcomes })} />
-                </Section>
-              )}
+              {/* 5. Workflow Outcomes */}
+              <Section number={5} label="Workflow Outcomes">
+                <OutcomeCards selected={state.outcomes} onChange={(outcomes) => updateState({ outcomes })} />
+              </Section>
 
               {/* Detailed instructions */}
               <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] overflow-hidden">
                 <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 dark:border-[#1E3050]">
                   <span className="text-gray-400 dark:text-[#7A9BBF] text-sm">✎</span>
                   <span className="heading-h5">Detailed instructions</span>
-                  <span className="text-xs text-gray-400 dark:text-[#7A9BBF] font-normal">Filled automatically from Natural mode</span>
+                  <span className="text-xs text-gray-400 dark:text-[#7A9BBF] font-normal">Filled automatically from Instructions</span>
                 </div>
                 <div className="px-5 py-4">
                   <textarea
                     value={state.additionalInstructions}
                     onChange={(e) => updateState({ additionalInstructions: e.target.value })}
-                    placeholder="Natural mode instructions will appear here. You can also type directly."
+                    placeholder="Instructions will appear here. You can also type directly."
                     rows={6}
                     className="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] transition-all leading-relaxed"
                   />
@@ -395,29 +374,39 @@ export default function PersonaEditor({ initialName = "My Agent" }: { initialNam
                 >
                   {saveLabel}
                 </button>
-                <button
-                  onClick={() => setShowOnboarding(true)}
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-[#7A9BBF] hover:text-gray-800 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
-                >
-                  Start over
-                </button>
               </div>
             </div>
             </div>
-          )}
-        </div>
+            </div>
+          </div>
 
-        {/* Right panel — always preview */}
-        <div className="w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] flex flex-col min-h-0">
+        {/* Right panel — preview */}
+        <div className={`flex-col w-full xl:w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] min-h-0
+          ${mobileView === "preview" ? "flex" : "hidden"} xl:flex`}>
           <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
             <span className={`w-2 h-2 rounded-full shrink-0 ${
               syncStatus === "syncing" ? "bg-amber-400 animate-pulse" :
-              syncStatus === "synced" ? "bg-emerald-400" : "bg-gray-300"
+              syncStatus === "synced"  ? "bg-emerald-400" :
+              syncStatus === "error"   ? "bg-red-500" :
+              "bg-gray-300"
             }`} />
-            <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">
+            <span className={`text-xs ${syncStatus === "error" ? "text-red-500 font-medium" : "text-gray-400 dark:text-[#7A9BBF]"}`}>
               {syncStatus === "syncing" ? "Applying changes..." :
-               syncStatus === "synced" ? "Agent updated" : "Preview"}
+               syncStatus === "synced"  ? "Agent updated" :
+               syncStatus === "error"   ? "Sync failed — changes not saved" :
+               "Preview"}
             </span>
+            {syncStatus === "error" && lastInstructionRef.current && (
+              <button
+                onClick={() => pushToAgent(
+                  lastInstructionRef.current!.instruction,
+                  lastInstructionRef.current!.questions
+                )}
+                className="ml-1 text-xs font-semibold text-red-500 hover:text-red-600 underline underline-offset-2 transition-colors"
+              >
+                Retry
+              </button>
+            )}
           </div>
           <div className="flex-1 min-h-0 overflow-hidden px-5 pb-6">
             <CustomGPTWidget reloadKey={widgetKey} />
@@ -448,7 +437,7 @@ function ModeToggle({
               : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE]"
             }`}
         >
-          {mode === "user" ? "Settings" : "Natural"}
+          {mode === "user" ? "Settings" : "Instructions"}
         </button>
       ))}
     </div>

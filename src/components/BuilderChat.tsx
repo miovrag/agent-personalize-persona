@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { PersonaState } from "./types";
+import { generateInstruction } from "./generateInstruction";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -169,14 +170,13 @@ function computeDiff(before: PersonaState, patch: Partial<PersonaState>): DiffEn
 export default function BuilderChat({ state, onApply }: Props) {
   const INIT_ID = "init";
   const [messages, setMessages] = useState<Message[]>([
-    { id: INIT_ID, role: "assistant", text: "What would you like to adjust? Pick a suggestion or describe it in your own words." },
+    { id: INIT_ID, role: "assistant", text: "What would you like to change? Pick a suggestion or type your own." },
   ]);
   const [input, setInput] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>(INITIAL_SUGGESTIONS);
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const [showAllChips, setShowAllChips] = useState(false);
   const [chipsExpanded, setChipsExpanded] = useState(false);
   const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
+  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
+  const [followUpSuggestions, setFollowUpSuggestions] = useState<string[] | null>(null);
   const [phIndex, setPhIndex] = useState(0);
   const [phVisible, setPhVisible] = useState(true);
 
@@ -219,9 +219,17 @@ export default function BuilderChat({ state, onApply }: Props) {
     tabsScrollRef.current?.scrollBy({ left: -120, behavior: "smooth" });
   }
   const [activeTab, setActiveTab] = useState<SuggestionCategory | "all" | "actions">("all");
-  const [followUpText, setFollowUpText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
+  const [expandedDiffs, setExpandedDiffs] = useState<Set<string>>(new Set());
+
+  function toggleDiff(id: string) {
+    setExpandedDiffs((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
   const prevStateRef = useRef<PersonaState | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -242,8 +250,8 @@ export default function BuilderChat({ state, onApply }: Props) {
 
   async function sendText(text: string) {
     if (!text.trim() || loading) return;
-    setShowSuggestions(false);
-    setFollowUpText(null);
+    setFollowUpQuestion(null);
+    setFollowUpSuggestions(null);
     setCanUndo(false);
     prevStateRef.current = null;
     setInput("");
@@ -274,8 +282,10 @@ export default function BuilderChat({ state, onApply }: Props) {
         diff = computeDiff(state, data.patch);
         prevStateRef.current = { ...state };
         setCanUndo(true);
-        const existing = state.additionalInstructions?.trim();
-        const additionalInstructions = existing ? `${existing}\n${text}` : text;
+        // Compute the full instruction from the new state and save it into
+        // additionalInstructions so Settings > Detailed instructions stays in sync.
+        const newState: PersonaState = { ...state, ...data.patch, additionalInstructions: "" };
+        const additionalInstructions = generateInstruction(newState);
         onApply({ ...data.patch, additionalInstructions });
       }
 
@@ -287,15 +297,8 @@ export default function BuilderChat({ state, onApply }: Props) {
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
-      if (data.followUp) setFollowUpText(data.followUp);
-
-      if (data.nextSuggestions?.length) {
-        setSuggestions(data.nextSuggestions);
-        setShowAllChips(true);
-        setActiveTab("all");
-        setChipsExpanded(false);
-        setShowSuggestions(true);
-      }
+      if (data.followUp) setFollowUpQuestion(data.followUp);
+      if (data.nextSuggestions?.length) setFollowUpSuggestions(data.nextSuggestions);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -306,13 +309,10 @@ export default function BuilderChat({ state, onApply }: Props) {
     }
   }
 
-  const allChips = suggestions;
-  const isInitialSuggestions = allChips.every((s) => SUGGESTION_META[s]);
-
-  // Filter by active tab, then apply show-more
+  // Filter by active tab
   const tabFilteredChips = activeTab === "all"
-    ? allChips
-    : allChips.filter((s) => SUGGESTION_META[s]?.category === activeTab);
+    ? INITIAL_SUGGESTIONS
+    : INITIAL_SUGGESTIONS.filter((s) => SUGGESTION_META[s]?.category === activeTab);
 
   const TABS: { id: SuggestionCategory | "all" | "actions"; label: string; activeClass: string }[] = [
     { id: "all",        label: "All",        activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
@@ -368,25 +368,42 @@ export default function BuilderChat({ state, onApply }: Props) {
               )}
             </div>
 
-            {/* Inline diff tags */}
+            {/* Inline diff tags — read-only, collapsible */}
             {msg.diff && msg.diff.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5 max-w-[85%]">
-                {msg.diff.map((entry, i) => (
-                  <span
-                    key={i}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border
-                      ${entry.type === "add"
-                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                        : entry.type === "remove"
-                          ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 border-red-200 dark:border-red-800"
-                          : "bg-gray-50 dark:bg-[#162238] text-gray-500 dark:text-[#7A9BBF] border-gray-200 dark:border-[#1E3050]"
-                      }`}
+              <div className="mt-1.5 max-w-[85%]">
+                <button
+                  onClick={() => toggleDiff(msg.id)}
+                  className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] transition-colors mb-1"
+                >
+                  <span>{msg.diff.length} change{msg.diff.length !== 1 ? "s" : ""}</span>
+                  <svg
+                    width="10" height="10" viewBox="0 0 10 10" fill="none"
+                    className={`transition-transform duration-200 ${expandedDiffs.has(msg.id) ? "rotate-180" : ""}`}
                   >
-                    {entry.type === "add" && <span>+</span>}
-                    {entry.type === "remove" && <span>−</span>}
-                    {entry.label}
-                  </span>
-                ))}
+                    <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {expandedDiffs.has(msg.id) && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                    {msg.diff.map((entry, i) => (
+                      <span
+                        key={i}
+                        className={`inline-flex items-center gap-0.5 text-[10px] font-medium
+                          ${entry.type === "add"
+                            ? "text-emerald-600 dark:text-emerald-500"
+                            : entry.type === "remove"
+                              ? "text-red-400 dark:text-red-400 line-through"
+                              : "text-gray-400 dark:text-[#7A9BBF]"
+                          }`}
+                      >
+                        {entry.type === "add" && (
+                          <span className="text-emerald-400 dark:text-emerald-600 leading-none">✓</span>
+                        )}
+                        {entry.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -407,30 +424,60 @@ export default function BuilderChat({ state, onApply }: Props) {
           </div>
         )}
 
+        {/* Inline follow-up suggestions — below last AI message */}
+        {!loading && (followUpQuestion || followUpSuggestions?.length) && (
+          <div className="flex flex-col items-start gap-2.5 pt-1">
+            {followUpQuestion && (
+              <div className="flex items-start gap-2 max-w-[90%]">
+                <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-violet-500 dark:text-violet-400 text-[9px] font-bold leading-none">?</span>
+                <p className="text-sm font-medium text-gray-700 dark:text-[#C8D8EE] leading-snug">
+                  {followUpQuestion}
+                </p>
+              </div>
+            )}
+            {followUpSuggestions && (
+              <div className="flex flex-wrap gap-2">
+                {followUpSuggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => sendText(s)}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-xl border-2 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600 transition-all duration-150 hover:scale-[1.03] active:scale-[0.97] shadow-sm"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div ref={bottomRef} />
         </>
         )}
       </div>
 
-      {/* Suggestion card — above input */}
-      {showSuggestions && !loading && (
-        <div className="shrink-0 px-4 pt-2 pb-2 border-t border-gray-100 dark:border-[#1E3050]">
-          <style>{`
-            @keyframes suggest-in {
-              0%   { opacity: 0; transform: translateY(10px) scale(0.98); }
-              60%  { opacity: 1; transform: translateY(-2px) scale(1.005); }
-              100% { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes tab-in {
-              0%   { opacity: 0; transform: translateY(4px); }
-              100% { opacity: 1; transform: translateY(0); }
-            }
-            @media (prefers-reduced-motion: no-preference) {
-              .suggest-card { animation: suggest-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
-              .tab-content   { animation: tab-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
-            }
-            .tabs-scroll::-webkit-scrollbar { display: none; }
-          `}</style>
+      {/* Bottom dock — suggestions + input share a 2-col grid so card width = input width */}
+      <div className="shrink-0 border-t border-gray-200 dark:border-[#1E3050] px-4">
+        <style>{`
+          @keyframes suggest-in {
+            0%   { opacity: 0; transform: translateY(10px) scale(0.98); }
+            60%  { opacity: 1; transform: translateY(-2px) scale(1.005); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes tab-in {
+            0%   { opacity: 0; transform: translateY(4px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .suggest-card { animation: suggest-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+            .tab-content   { animation: tab-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+          }
+          .tabs-scroll::-webkit-scrollbar { display: none; }
+        `}</style>
+        <div className="grid gap-x-2" style={{ gridTemplateColumns: "1fr auto" }}>
+
+          {/* Row 1 col 1 — suggestions card */}
+          <div className="pt-2 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
           <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] shadow-md dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden">
 
             {/* Collapsed label-only mode */}
@@ -443,8 +490,8 @@ export default function BuilderChat({ state, onApply }: Props) {
               </button>
             ) : (<>
 
-            {/* Category tabs — only for initial suggestions */}
-            {isInitialSuggestions && !followUpText && (
+            {/* Category tabs */}
+            {(
               <div className="flex items-center gap-1 px-3 pt-2.5 pb-2 border-b border-gray-100 dark:border-[#1E3050]">
                 {/* Left scroll chevron */}
                 {tabsCanScrollLeft && (
@@ -533,14 +580,6 @@ export default function BuilderChat({ state, onApply }: Props) {
             )}
 
             <div className="px-4 pt-3 pb-0 space-y-3">
-            {/* Follow-up question */}
-            {followUpText && (
-              <div>
-                <span className="block text-[10px] font-bold uppercase tracking-widest text-sky-500 dark:text-sky-400 mb-1">Suggestion</span>
-                <p className="text-xs text-sky-800 dark:text-sky-300 leading-relaxed">{followUpText}</p>
-              </div>
-            )}
-
             {/* Content area — fixed height when collapsed, auto when expanded */}
             <div style={{ height: chipsExpanded ? "35vh" : "110px", overflow: "hidden", transition: "height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1)" }}>
             <div key={activeTab} className="tab-content h-full">
@@ -565,7 +604,7 @@ export default function BuilderChat({ state, onApply }: Props) {
               /* Expanded "All" — grouped by archetype */
               <div className="overflow-y-auto max-h-[35vh] pr-3">
                 {(["support","expert","ops","coaching","content","guardrails","behavior","tone","format"] as SuggestionCategory[]).map((cat) => {
-                  const items = allChips.filter((s) => SUGGESTION_META[s]?.category === cat);
+                  const items = INITIAL_SUGGESTIONS.filter((s) => SUGGESTION_META[s]?.category === cat);
                   if (!items.length) return null;
                   const cfg = CATEGORY_CONFIG[cat];
                   return (
@@ -635,44 +674,47 @@ export default function BuilderChat({ state, onApply }: Props) {
             </div>
             </>)}
           </div>
-        </div>
-      )}
+          </div>
+          {/* Row 1 col 2 — spacer matches Send button column */}
+          <div className="border-b border-gray-100 dark:border-[#1E3050]" />
 
-      {/* Input */}
-      <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-[#1E3050] flex gap-2 items-center">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !loading) sendText(input); }}
-            placeholder=""
-            disabled={loading}
-            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all"
-            autoFocus
-          />
-          {/* Animated placeholder — hidden when typing */}
-          {!input && (
-            <span
-              className="pointer-events-none absolute left-3.5 text-sm text-gray-400 dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
-              style={{
-                top: "50%",
-                opacity: phVisible ? 1 : 0,
-                transform: `translateY(${phVisible ? "-50%" : "calc(-50% + 6px)"})`,
-              }}
-            >
-              {PLACEHOLDERS[phIndex]}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => sendText(input)}
-          disabled={!input.trim() || loading}
-          className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shrink-0"
-        >
-          {loading ? "…" : "Send"}
-        </button>
-      </div>
+          {/* Row 2 col 1 — input */}
+          <div className="py-3 relative">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !loading) sendText(input); }}
+              placeholder=""
+              disabled={loading}
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all"
+              autoFocus
+            />
+            {/* Animated placeholder — hidden when typing */}
+            {!input && (
+              <span
+                className="pointer-events-none absolute left-3.5 text-sm text-gray-400 dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
+                style={{
+                  top: "50%",
+                  opacity: phVisible ? 1 : 0,
+                  transform: `translateY(${phVisible ? "-50%" : "calc(-50% + 6px)"})`,
+                }}
+              >
+                {PLACEHOLDERS[phIndex]}
+              </span>
+            )}
+          </div>
+          {/* Row 2 col 2 — Send button */}
+          <button
+            onClick={() => sendText(input)}
+            disabled={!input.trim() || loading}
+            className="self-center px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            {loading ? "…" : "Send"}
+          </button>
+
+        </div>{/* end grid */}
+      </div>{/* end bottom dock */}
     </div>
   );
 }

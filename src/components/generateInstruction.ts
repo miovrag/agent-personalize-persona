@@ -97,13 +97,6 @@ export function generateInstruction(state: PersonaState): string {
     lines.push("");
   }
 
-  // Additional instructions
-  if (additionalInstructions.trim()) {
-    lines.push(`## Additional Instructions`);
-    lines.push(additionalInstructions.trim());
-    lines.push("");
-  }
-
   lines.push(`## Fallback Behavior`);
   lines.push(
     `If you cannot answer a question based on your knowledge base, say so clearly and suggest where the user might find help. Never fabricate information.`
