@@ -26,7 +26,7 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
         <label htmlFor="agent-tone" className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
           How should it sound?
         </label>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[#162238] ${current.color}`}>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F5F5F5] dark:bg-[#162238] ${current.color}`}>
           {current.label}
         </span>
       </div>
@@ -73,20 +73,20 @@ export default function ToneSlider({ value, onChange }: ToneSliderProps) {
           </div>
         </div>
 
-        <div className="flex justify-between text-xs text-gray-400 dark:text-[#7A9BBF] font-medium px-0.5 mt-1">
+        <div className="flex justify-between text-xs text-[#A3A3A3] dark:text-[#7A9BBF] font-medium px-0.5 mt-1">
           <span>Formal & precise</span>
           <span>Warm & conversational</span>
         </div>
       </div>
 
       {/* Tone preview pill */}
-      <div className="bg-gray-50 dark:bg-[#162238] rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
+      <div className="bg-[#FAFAFA] dark:bg-[#162238] rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
         <span className="text-base mt-0.5 select-none">
           {value < 30 ? "🎩" : value < 60 ? "💼" : value < 80 ? "😊" : "👋"}
         </span>
         <div>
-          <p className="text-xs font-medium text-gray-600 dark:text-[#C8D8EE] mb-0.5">{current.label} tone</p>
-          <p className="text-xs text-gray-500 dark:text-[#7A9BBF] leading-relaxed">
+          <p className="text-xs font-medium text-[#525252] dark:text-[#C8D8EE] mb-0.5">{current.label} tone</p>
+          <p className="text-xs text-[#737373] dark:text-[#7A9BBF] leading-relaxed">
             {value < 30
               ? "Precise, structured sentences. Formal vocabulary. No contractions."
               : value < 60

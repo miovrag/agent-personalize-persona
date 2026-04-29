@@ -22,7 +22,7 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
         <label id="style-chips-label" className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
           Communication qualities
         </label>
-        <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">
+        <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF]">
           {selected.length}/3 selected
         </span>
       </div>
@@ -41,8 +41,8 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
                 ${isSelected
                   ? "bg-gray-900 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] border-gray-900 dark:border-[#C8D8EE] shadow-sm"
                   : isDisabled
-                  ? "bg-gray-50 dark:bg-[#0B1426] text-gray-300 dark:text-[#2a4060] border-gray-100 dark:border-[#1E3050] cursor-not-allowed"
-                  : "bg-white dark:bg-[#162238] text-gray-600 dark:text-[#7A9BBF] border-gray-200 dark:border-[#1E3050] hover:border-gray-900 dark:hover:border-[#C8D8EE] hover:text-gray-900 dark:hover:text-[#C8D8EE] hover:bg-gray-50 dark:hover:bg-[#1E3050]"
+                  ? "bg-[#FAFAFA] dark:bg-[#0B1426] text-[#D4D4D4] dark:text-[#2a4060] border-[#F5F5F5] dark:border-[#1E3050] cursor-not-allowed"
+                  : "bg-white dark:bg-[#162238] text-[#525252] dark:text-[#7A9BBF] border-[#E5E5E5] dark:border-[#1E3050] hover:border-gray-900 dark:hover:border-[#C8D8EE] hover:text-gray-900 dark:hover:text-[#C8D8EE] hover:bg-[#FAFAFA] dark:hover:bg-[#1E3050]"
                 }`}
             >
               {style}
@@ -52,7 +52,7 @@ export default function StyleChips({ selected, onChange }: StyleChipsProps) {
       </div>
 
       {selected.length === 3 && (
-        <p className="text-xs text-gray-400 dark:text-[#7A9BBF]">
+        <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF]">
           Maximum 3 qualities selected. Deselect one to change.
         </p>
       )}

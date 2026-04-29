@@ -9,7 +9,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggle}
       className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm font-medium
-        border-gray-200 text-gray-600 bg-white hover:bg-gray-50
+        border-[#E5E5E5] text-[#525252] bg-white hover:bg-[#FAFAFA]
         dark:border-[#1E3050] dark:text-[#7A9BBF] dark:bg-[#111D30] dark:hover:bg-[#162238]"
       aria-label="Toggle theme"
     >

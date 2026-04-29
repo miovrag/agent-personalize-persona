@@ -4,13 +4,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
 import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
 import AdvancedToggle from "./AdvancedToggle";
-import CompletionScore from "./CompletionScore";
 import PresetManager from "./PresetManager";
 import CustomGPTWidget from "./CustomGPTWidget";
 import BuilderChat from "./BuilderChat";
 import ThemeToggle from "./ThemeToggle";
 import GeneralSettings from "./GeneralSettings";
 import ConversationSettings from "./ConversationSettings";
+import CitationsSettings from "./CitationsSettings";
+import IntelligenceSettings from "./IntelligenceSettings";
+import AdvancedSettings from "./AdvancedSettings";
+import SecuritySettings from "./SecuritySettings";
 
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
@@ -40,14 +43,61 @@ const DEFAULT_STATE: PersonaState = {
   failedModerationMessage: "",
   conversationDuration: "24-hour-memory",
   markdownInResponses: "enabled",
-  agentRole: "",
+  antiHallucination: "enabled",
+  agentVisibility: "public",
+  recaptcha: "disabled",
+  whitelistedDomains: "",
+  retentionPeriod: "never",
+  retentionDays: 30,
+  conversationHistory: "hidden",
+  titleAvatarEnabled: true,
+  spotlightAvatarEnabled: true,
+  spotlightAvatarType: "main",
+  spotlightAvatarShape: "round",
+  userAvatarEnabled: true,
+  userAvatarUploadUrl: "",
+  avatarOrientation: "agent-left-user-right",
+  titleAvatarAlignment: "left",
+  inChatAgentAvatar: true,
+  inChatUserAvatar: false,
+  affiliateId: "",
+  termsOfService: "",
+  userFeedback: "enabled",
+  showCopyButton: "enabled",
+  conversationSharing: "enabled",
+  conversationExporting: "enabled",
+  removeBranding: false,
+  agentTitle: "",
+  titleColor: "#000000",
+  nextGenEnabled: false,
+  primaryGoal: "optimal",
+  aiModel: "claude-sonnet-4-6-reasoning",
+  dataSource: "my-data",
+  userAwareness: true,
+  enableCitations: true,
+  numberedCitations: true,
+  renderImageCitationsInline: true,
+  limitImageCitationHeight: false,
+  useOpenGraphImages: true,
+  maxImagesPerResponse: "unlimited",
+  classicCitations: true,
+  citationHeader: "",
+  citationLabel: "",
+  citationDisplayState: "opened",
+  enablePdfViewer: true,
+  autoOpenPdfViewer: true,
+  preventPdfDownload: false,
+  allowKnowledgeBaseQueries: true,
+  enableNumericSearch: true,
+  agentRole: "Customer Support",
   agentAvatarUrl: "",
   agentColorScheme: "adaptive",
-  agentColor: "#7c3aed",
+  agentColor: "#7367F0",
   agentStyle: "soft",
   fontFamily: "inter",
   backgroundType: "color",
-  backgroundColor: "#7c3aed",
+  backgroundColor: "#7367F0",
+  backgroundImageUrl: "",
 };
 
 type SaveState = "idle" | "saving" | "saved";
@@ -159,12 +209,12 @@ export default function PersonaEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between shrink-0 px-4 lg:px-6 py-3 lg:py-4 border-b border-gray-200 dark:border-[#1E3050]">
+      <div className="flex items-center justify-between shrink-0 px-4 lg:px-6 py-3 lg:py-4 border-b border-[#E5E5E5] dark:border-[#1E3050]">
         <div className="flex items-center gap-3 min-w-0">
           {/* Hamburger — mobile only */}
           <button
             onClick={onMenuClick}
-            className="xl:hidden shrink-0 p-1.5 -ml-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E3050] text-gray-600 dark:text-[#7A9BBF] transition-colors"
+            className="xl:hidden shrink-0 p-1.5 -ml-1 rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] text-[#525252] dark:text-[#7A9BBF] transition-colors"
             aria-label="Open menu"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -179,14 +229,14 @@ export default function PersonaEditor({
               aria-label="Expand sidebar"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <rect x="4" y="4" width="16" height="16" rx="2" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M9 4V20" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="4" y="4" width="16" height="16" rx="2" stroke="#7367F0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 4V20" stroke="#7367F0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           )}
           <div className="min-w-0">
             <h1 className="heading-h5 mb-0 lg:mb-1 truncate">{state.agentName}</h1>
-            <p className="hidden sm:block text-sm text-gray-400 dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
+            <p className="hidden sm:block text-sm text-[#A3A3A3] dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
@@ -209,7 +259,7 @@ export default function PersonaEditor({
               </button>
               <button
                 onClick={() => setPublishConfirm(false)}
-                className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-600 dark:text-[#7A9BBF] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                className="px-3 py-2 rounded-lg text-xs font-semibold text-[#525252] dark:text-[#7A9BBF] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
               >
                 Cancel
               </button>
@@ -232,7 +282,7 @@ export default function PersonaEditor({
       </div>
 
       {/* Mobile Settings / Preview switcher */}
-      <div className="xl:hidden flex shrink-0 border-b border-gray-200 dark:border-[#1E3050]">
+      <div className="xl:hidden flex shrink-0 border-b border-[#E5E5E5] dark:border-[#1E3050]">
         {(["settings", "preview"] as const).map((view) => (
           <button
             key={view}
@@ -240,7 +290,7 @@ export default function PersonaEditor({
             className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-colors border-b-2
               ${mobileView === view
                 ? "border-violet-600 text-violet-700 dark:text-violet-400"
-                : "border-transparent text-gray-500 dark:text-[#7A9BBF]"
+                : "border-transparent text-[#737373] dark:text-[#7A9BBF]"
               }`}
           >
             {view}
@@ -252,7 +302,7 @@ export default function PersonaEditor({
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left panel */}
-        <div className={`flex-col flex-1 bg-[#F5F5F5] dark:bg-[#0B1426] overflow-hidden
+        <div className={`flex-col flex-1 bg-[#FAFAFA] dark:bg-[#0B1426] overflow-hidden
           ${mobileView === "settings" ? "flex" : "hidden"} xl:flex`}>
 
           {/* Mode toggle — centered below tab bar */}
@@ -262,7 +312,7 @@ export default function PersonaEditor({
 
           {/* Settings sub-tabs — shown when in settings mode */}
           {chatMode === "settings" && (
-            <div className="shrink-0 flex border-b border-gray-200 dark:border-[#1E3050]">
+            <div className="shrink-0 flex border-b border-[#E5E5E5] dark:border-[#1E3050]">
               {(["general","persona","conversation","citations","intelligence","advanced","security"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -270,7 +320,7 @@ export default function PersonaEditor({
                   className={`flex-1 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
                     ${settingsTab === tab
                       ? "border-violet-600 text-violet-700 dark:text-violet-400"
-                      : "border-transparent text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE]"
+                      : "border-transparent text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
                     }`}
                 >
                   {tab}
@@ -300,31 +350,29 @@ export default function PersonaEditor({
                 <ConversationSettings state={state} onChange={updateState} onSave={handleSave} />
               )}
 
+              {/* Citations tab */}
+              {settingsTab === "citations" && (
+                <CitationsSettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
+              {/* Intelligence tab */}
+              {settingsTab === "intelligence" && (
+                <IntelligenceSettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
+              {/* Advanced tab */}
+              {settingsTab === "advanced" && (
+                <AdvancedSettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
+              {/* Security tab */}
+              {settingsTab === "security" && (
+                <SecuritySettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
               {/* Persona tab (existing settings content) */}
               {settingsTab === "persona" && (<>
-              <div className="px-6 pt-6 pb-4">
-                <CompletionScore score={score} />
-              </div>
-
             <div className="p-6 space-y-6">
-
-              {/* Detailed instructions */}
-              <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] overflow-hidden">
-                <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 dark:border-[#1E3050]">
-                  <span className="text-gray-400 dark:text-[#7A9BBF] text-sm">✎</span>
-                  <span className="heading-h5">Detailed instructions</span>
-                  <span className="text-xs text-gray-400 dark:text-[#7A9BBF] font-normal">Filled automatically from Instructions</span>
-                </div>
-                <div className="px-5 py-4">
-                  <textarea
-                    value={state.additionalInstructions}
-                    onChange={(e) => updateState({ additionalInstructions: e.target.value })}
-                    placeholder="Instructions will appear here. You can also type directly."
-                    rows={7}
-                    className="w-full px-3.5 py-3 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] transition-all leading-relaxed overflow-y-auto"
-                  />
-                </div>
-              </div>
 
               {/* Advanced */}
               <AdvancedToggle
@@ -355,7 +403,7 @@ export default function PersonaEditor({
           </div>
 
         {/* Right panel — preview */}
-        <div className={`flex-col w-full xl:w-[420px] shrink-0 border-l border-gray-200 dark:border-[#1E3050] bg-[#F5F5F5] dark:bg-[#0B1426] min-h-0
+        <div className={`flex-col w-full xl:w-[420px] shrink-0 border-l border-[#E5E5E5] dark:border-[#1E3050] bg-[#FAFAFA] dark:bg-[#0B1426] min-h-0
           ${mobileView === "preview" ? "flex" : "hidden"} xl:flex`}>
           <div className="flex-1 min-h-0 overflow-hidden">
             <CustomGPTWidget reloadKey={widgetKey} />
@@ -375,15 +423,15 @@ function ModeToggle({
   onChange: (mode: "builder" | "settings") => void;
 }) {
   return (
-    <div className="flex items-center bg-gray-100 dark:bg-[#162238] rounded-lg p-0.5 shrink-0">
+    <div className="flex items-center bg-[#F5F5F5] dark:bg-[#162238] rounded-lg p-0.5 shrink-0">
       {(["builder", "settings"] as const).map((mode) => (
         <button
           key={mode}
           onClick={() => onChange(mode)}
           className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all
             ${chatMode === mode
-              ? "bg-white dark:bg-[#111D30] text-gray-800 dark:text-[#C8D8EE] shadow-sm"
-              : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE]"
+              ? "bg-white dark:bg-[#111D30] text-[#262626] dark:text-[#C8D8EE] shadow-sm"
+              : "text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE]"
             }`}
         >
           {mode === "builder" ? "Instructions" : "Settings"}

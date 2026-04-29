@@ -1,18 +1,29 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { PersonaState } from "./types";
 import { AGENT_ROLE_OPTIONS } from "./types";
 
+const AGENT_ROLE_DESCRIPTIONS: Record<string, string> = {
+  "Enterprise Search": "Helps employees find information across internal documents, wikis, and knowledge bases quickly.",
+  "Customer Support": "Answers customer questions, resolves common issues, and escalates complex cases to human agents.",
+  "Sales Assistant": "Guides prospects through your product offering, handles objections, and qualifies leads.",
+  "HR Assistant": "Supports employees with HR policies, onboarding, benefits, and common people-ops questions.",
+  "Knowledge Base": "Acts as a self-service hub for structured documentation, FAQs, and reference material.",
+  "Product Guide": "Walks users through product features, setup steps, and best practices to drive adoption.",
+  "Legal Assistant": "Surfaces relevant clauses, policies, and legal documents — always with appropriate disclaimers.",
+  "IT Helpdesk": "Troubleshoots technical issues, guides users through fixes, and logs tickets when needed.",
+};
+
 const SettingsIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 text-gray-400 dark:text-[#7A9BBF]">
-    <path d="M8 1l1.2 2.6 2.8.4-2 2 .5 2.8L8 7.5 5.5 8.8 6 6 4 4l2.8-.4L8 1z" fill="currentColor" opacity="0.5"/>
-    <path d="M8 1l1.2 2.6 2.8.4-2 2 .5 2.8L8 7.5 5.5 8.8 6 6 4 4l2.8-.4L8 1z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#A3A3A3] dark:text-[#7A9BBF]">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
 );
 
 const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-gray-400 dark:text-[#7A9BBF]">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF]">
     <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
     <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
   </svg>
@@ -47,14 +58,225 @@ function RadioGroup<T extends string>({
             onClick={() => onChange(opt.value)}
             className={`text-sm transition-colors cursor-pointer
               ${value === opt.value
-                ? "text-gray-800 dark:text-[#C8D8EE] font-medium"
-                : "text-gray-500 dark:text-[#7A9BBF] group-hover:text-gray-700 dark:group-hover:text-[#C8D8EE]"
+                ? "text-[#262626] dark:text-[#C8D8EE] font-medium"
+                : "text-[#737373] dark:text-[#7A9BBF] group-hover:text-[#404040] dark:group-hover:text-[#C8D8EE]"
               }`}
           >
             {opt.label}
           </span>
         </label>
       ))}
+    </div>
+  );
+}
+
+// --- Color utilities ---
+function hexToRgb(hex: string): [number, number, number] | null {
+  const clean = hex.replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
+  return [parseInt(clean.slice(0, 2), 16), parseInt(clean.slice(2, 4), 16), parseInt(clean.slice(4, 6), 16)];
+}
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(x => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2, '0')).join('');
+}
+function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) switch (max) {
+    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+    case g: h = ((b - r) / d + 2) / 6; break;
+    default: h = ((r - g) / d + 4) / 6;
+  }
+  return [h * 360, max ? d / max : 0, max];
+}
+function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
+  h = (((h % 360) + 360) % 360) / 360;
+  const i = Math.floor(h * 6), f = h * 6 - i;
+  const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  const c: [number, number, number][] = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]];
+  const [r, g, b] = c[i % 6];
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+function ColorPickerPopover({
+  initialValue,
+  onChange,
+  anchorRef,
+}: {
+  initialValue: string;
+  onChange: (hex: string) => void;
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const svCanvasRef = useRef<HTMLCanvasElement>(null);
+  const hueCanvasRef = useRef<HTMLCanvasElement>(null);
+  const dragging = useRef<'sv' | 'hue' | null>(null);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  useEffect(() => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 8, left: rect.left });
+  }, [anchorRef]);
+
+  const initHsv = (): [number, number, number] => {
+    const rgb = hexToRgb(initialValue);
+    return rgb ? rgbToHsv(...rgb) : [220, 0.7, 0.8];
+  };
+
+  const [hue, setHue] = useState(() => initHsv()[0]);
+  const [sat, setSat] = useState(() => initHsv()[1]);
+  const [val, setVal] = useState(() => initHsv()[2]);
+  const [currentHex, setCurrentHex] = useState(initialValue);
+  const [hexInput, setHexInput] = useState(initialValue);
+
+  // Live refs for use inside stable drag-effect closure
+  const hueR = useRef(hue), satR = useRef(sat), valR = useRef(val);
+  hueR.current = hue; satR.current = sat; valR.current = val;
+
+  // Draw SV gradient
+  useEffect(() => {
+    const cv = svCanvasRef.current; if (!cv) return;
+    const ctx = cv.getContext('2d')!;
+    const [r, g, b] = hsvToRgb(hue, 1, 1);
+    const hg = ctx.createLinearGradient(0, 0, cv.width, 0);
+    hg.addColorStop(0, '#fff'); hg.addColorStop(1, `rgb(${r},${g},${b})`);
+    ctx.fillStyle = hg; ctx.fillRect(0, 0, cv.width, cv.height);
+    const vg = ctx.createLinearGradient(0, 0, 0, cv.height);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, cv.width, cv.height);
+  }, [hue]);
+
+  // Draw hue bar (once)
+  useEffect(() => {
+    const cv = hueCanvasRef.current; if (!cv) return;
+    const ctx = cv.getContext('2d')!;
+    const g = ctx.createLinearGradient(0, 0, cv.width, 0);
+    for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, `hsl(${i * 60},100%,50%)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+  }, []);
+
+  // Global drag handler (stable — uses refs only)
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      let h = hueR.current, s = satR.current, v = valR.current;
+      if (dragging.current === 'sv' && svCanvasRef.current) {
+        const rect = svCanvasRef.current.getBoundingClientRect();
+        s = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        v = 1 - Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      }
+      if (dragging.current === 'hue' && hueCanvasRef.current) {
+        const rect = hueCanvasRef.current.getBoundingClientRect();
+        h = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 360;
+      }
+      setHue(h); setSat(s); setVal(v);
+      hueR.current = h; satR.current = s; valR.current = v;
+      const [r, g, b] = hsvToRgb(h, s, v);
+      const hex = rgbToHex(r, g, b);
+      setCurrentHex(hex); setHexInput(hex); onChangeRef.current(hex);
+    };
+    const up = () => { dragging.current = null; };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  }, []);
+
+  const onSVDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = 'sv';
+    const rect = svCanvasRef.current!.getBoundingClientRect();
+    const s = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const v = 1 - Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    setSat(s); setVal(v);
+    satR.current = s; valR.current = v;
+    const [r, g, b] = hsvToRgb(hueR.current, s, v);
+    const hex = rgbToHex(r, g, b);
+    setCurrentHex(hex); setHexInput(hex); onChange(hex);
+  };
+
+  const onHueDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = 'hue';
+    const rect = hueCanvasRef.current!.getBoundingClientRect();
+    const h = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 360;
+    setHue(h); hueR.current = h;
+    const [r, g, b] = hsvToRgb(h, satR.current, valR.current);
+    const hex = rgbToHex(r, g, b);
+    setCurrentHex(hex); setHexInput(hex); onChange(hex);
+  };
+
+  return (
+    <div
+      className="fixed z-50 bg-white dark:bg-[#111D30] rounded-xl shadow-xl border border-[#E5E5E5] dark:border-[#1E3050] p-3 w-[220px]"
+      style={{ top: pos.top, left: pos.left }}
+    >
+      {/* SV panel */}
+      <div
+        className="relative mb-3 cursor-crosshair select-none"
+        style={{ height: 150 }}
+        onMouseDown={onSVDown}
+      >
+        <div className="absolute inset-0 overflow-hidden rounded-lg">
+          <canvas ref={svCanvasRef} width={200} height={150} className="block w-full h-full" />
+        </div>
+        <div
+          className="absolute w-4 h-4 rounded-full pointer-events-none"
+          style={{
+            left: `${sat * 100}%`,
+            top: `${(1 - val) * 100}%`,
+            transform: 'translate(-50%,-50%)',
+            background: currentHex,
+            boxShadow: '0 0 0 2px white, 0 0 0 3px rgba(0,0,0,0.25)',
+          }}
+        />
+      </div>
+
+      {/* Hue bar */}
+      <div
+        className="relative mb-3 cursor-pointer select-none rounded-full"
+        style={{ height: 12 }}
+        onMouseDown={onHueDown}
+      >
+        <canvas ref={hueCanvasRef} width={200} height={12} className="block w-full rounded-full" style={{ height: 12 }} />
+        <div
+          className="absolute top-1/2 w-4 h-4 rounded-full pointer-events-none"
+          style={{
+            left: `${(hue / 360) * 100}%`,
+            transform: 'translate(-50%,-50%)',
+            background: `hsl(${hue},100%,50%)`,
+            boxShadow: '0 0 0 2px white, 0 0 0 3px rgba(0,0,0,0.25)',
+          }}
+        />
+      </div>
+
+      {/* Hex input */}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-6 h-6 rounded-md border border-[#E5E5E5] dark:border-[#1E3050] shrink-0"
+          style={{ background: currentHex }}
+        />
+        <input
+          type="text"
+          value={hexInput}
+          onChange={(e) => {
+            setHexInput(e.target.value);
+            const rgb = hexToRgb(e.target.value);
+            if (rgb) {
+              const [nh, ns, nv] = rgbToHsv(...rgb);
+              setHue(nh); setSat(ns); setVal(nv);
+              hueR.current = nh; satR.current = ns; valR.current = nv;
+              const hex = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`;
+              setCurrentHex(hex); onChange(hex);
+            }
+          }}
+          className="flex-1 px-2 py-1.5 text-xs font-mono rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 uppercase"
+          placeholder="#000000"
+          maxLength={7}
+        />
+      </div>
     </div>
   );
 }
@@ -66,44 +288,300 @@ function ColorInput({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const safeValue = /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#7367F0';
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex items-center flex-1 max-w-[220px] border border-gray-200 dark:border-[#1E3050] rounded-lg overflow-hidden bg-white dark:bg-[#162238]">
+    <div ref={containerRef} className="relative flex items-center gap-2">
+      <div className="relative flex items-center flex-1 max-w-[260px] border border-[#E5E5E5] dark:border-[#1E3050] rounded-xl overflow-hidden bg-white dark:bg-[#162238]">
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-3 py-2 text-sm bg-transparent outline-none text-gray-800 dark:text-[#C8D8EE] font-mono"
+          className="flex-1 px-3 py-2.5 text-sm bg-transparent outline-none text-[#262626] dark:text-[#C8D8EE] font-mono uppercase"
           placeholder="#000000"
         />
         <button
-          onClick={() => inputRef.current?.click()}
-          className="flex items-center justify-center w-9 h-9 shrink-0"
+          onClick={() => setOpen((p) => !p)}
+          className="flex items-center justify-center shrink-0 self-stretch px-1"
         >
           <span
-            className="w-5 h-5 rounded-full border border-gray-200 dark:border-[#1E3050]"
+            className="w-9 h-9 rounded-full block"
             style={{ backgroundColor: value }}
           />
         </button>
       </div>
       <button
-        onClick={() => inputRef.current?.click()}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors text-gray-400 dark:text-[#7A9BBF]"
+        onClick={() => setOpen((p) => !p)}
+        className="p-2 rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors text-[#A3A3A3] dark:text-[#7A9BBF]"
         aria-label="Pick color"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
         </svg>
       </button>
-      <input
-        ref={inputRef}
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="sr-only"
-      />
+      {open && (
+        <ColorPickerPopover
+          initialValue={safeValue}
+          onChange={onChange}
+          anchorRef={containerRef}
+        />
+      )}
+    </div>
+  );
+}
+
+const BG_PRESETS: { id: string; label: string; css: string }[] = [
+  { id: "chalk",   label: "Chalk",   css: "linear-gradient(160deg,#f9fafb 0%,#f3f4f6 100%)" },
+  { id: "mist",    label: "Mist",    css: "linear-gradient(160deg,#ede9fe 0%,#e0f2fe 100%)" },
+  { id: "blush",   label: "Blush",   css: "linear-gradient(160deg,#fce7f3 0%,#ede9fe 100%)" },
+  { id: "rose",    label: "Rose",    css: "linear-gradient(160deg,#fff1f2 0%,#fce7f3 100%)" },
+  { id: "ocean",   label: "Ocean",   css: "linear-gradient(160deg,#0ea5e9 0%,#6366f1 100%)" },
+  { id: "aurora",  label: "Aurora",  css: "linear-gradient(160deg,#7c3aed 0%,#db2777 50%,#f59e0b 100%)" },
+  { id: "dusk",    label: "Dusk",    css: "linear-gradient(160deg,#1e1b4b 0%,#4c1d95 100%)" },
+  { id: "carbon",  label: "Carbon",  css: "linear-gradient(160deg,#111827 0%,#1f2937 100%)" },
+  { id: "forest",  label: "Forest",  css: "linear-gradient(160deg,#064e3b 0%,#065f46 100%)" },
+  { id: "golden",  label: "Golden",  css: "linear-gradient(160deg,#92400e 0%,#d97706 100%)" },
+  { id: "slate",   label: "Slate",   css: "linear-gradient(160deg,#0f172a 0%,#334155 100%)" },
+  { id: "mesh",    label: "Mesh",    css: "radial-gradient(ellipse at 20% 20%,#a78bfa 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,#38bdf8 0%,transparent 50%),#1e1b4b" },
+];
+
+const PRESET_AVATARS = [
+  {
+    id: "male-1", category: "Male", label: "Professional",
+    svg: (
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="50" fill="#3730a3"/>
+        <path d="M18 100 Q20 72 50 68 Q80 72 82 100Z" fill="#4f46e5"/>
+        <path d="M43 68 L47 62 L50 65 L53 62 L57 68Z" fill="#4f46e5"/>
+        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fdba74"/>
+        <circle cx="50" cy="50" r="19" fill="#fdba74"/>
+        <path d="M31 48 Q33 30 50 28 Q67 30 69 48 Q66 36 50 34 Q34 36 31 48Z" fill="#1e293b"/>
+        <ellipse cx="43.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
+        <ellipse cx="56.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
+        <path d="M45 57 Q50 61 55 57" stroke="#92400e" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    id: "male-2", category: "Male", label: "Casual",
+    svg: (
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="50" fill="#065f46"/>
+        <path d="M18 100 Q20 72 50 68 Q80 72 82 100Z" fill="#059669"/>
+        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fcd34d"/>
+        <circle cx="50" cy="50" r="19" fill="#fcd34d"/>
+        <path d="M31 47 Q34 29 50 27 Q66 29 69 47 Q60 33 50 33 Q40 33 31 47Z" fill="#78350f"/>
+        <path d="M31 47 Q33 52 32 55 Q37 45 50 44 Q63 45 68 55 Q67 52 69 47 Q60 33 50 33 Q40 33 31 47Z" fill="#92400e"/>
+        <ellipse cx="43.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
+        <ellipse cx="56.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
+        <path d="M44 58 Q50 62 56 58" stroke="#92400e" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        <path d="M40 62 Q43 64 46 63 M54 63 Q57 64 60 62" stroke="#92400e" strokeWidth="1" fill="none" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    id: "female-1", category: "Female", label: "Professional",
+    svg: (
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="50" fill="#6d28d9"/>
+        <path d="M15 100 Q18 70 50 66 Q82 70 85 100Z" fill="#7367F0"/>
+        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fca5a5"/>
+        <circle cx="50" cy="50" r="19" fill="#fca5a5"/>
+        <path d="M31 46 Q31 28 50 26 Q69 28 69 46" fill="#1e293b"/>
+        <path d="M31 46 Q29 55 30 62 Q32 56 31 50Z" fill="#1e293b"/>
+        <path d="M69 46 Q71 55 70 62 Q68 56 69 50Z" fill="#1e293b"/>
+        <path d="M30 62 Q28 72 32 80 Q38 70 31 62Z" fill="#1e293b"/>
+        <path d="M70 62 Q72 72 68 80 Q62 70 69 62Z" fill="#1e293b"/>
+        <ellipse cx="43.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
+        <ellipse cx="56.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
+        <path d="M41 46 Q44 44 47 45" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <path d="M53 45 Q56 44 59 46" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <path d="M45 57 Q50 61 55 57" stroke="#be123c" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    id: "female-2", category: "Female", label: "Casual",
+    svg: (
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="50" fill="#b45309"/>
+        <path d="M16 100 Q19 71 50 67 Q81 71 84 100Z" fill="#d97706"/>
+        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fed7aa"/>
+        <circle cx="50" cy="50" r="19" fill="#fed7aa"/>
+        <circle cx="50" cy="29" r="9" fill="#b45309"/>
+        <ellipse cx="50" cy="32" rx="7" ry="5" fill="#d97706"/>
+        <path d="M41 32 Q50 24 59 32 Q57 27 50 26 Q43 27 41 32Z" fill="#92400e"/>
+        <ellipse cx="43.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
+        <ellipse cx="56.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
+        <path d="M41 46 Q44 44 47 45" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <path d="M53 45 Q56 44 59 46" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <path d="M45 57 Q50 61 55 57" stroke="#be123c" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        <circle cx="43" cy="52" r="1.5" fill="#fda4af" opacity="0.7"/>
+        <circle cx="57" cy="52" r="1.5" fill="#fda4af" opacity="0.7"/>
+      </svg>
+    ),
+  },
+  {
+    id: "ai-1", category: "AI", label: "Bot",
+    svg: (
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="50" fill="#0f172a"/>
+        <rect x="27" y="35" width="46" height="36" rx="8" fill="#1e293b" stroke="#7367F0" strokeWidth="1.5"/>
+        <rect x="35" y="44" width="12" height="9" rx="3" fill="#7367F0" opacity="0.9"/>
+        <rect x="53" y="44" width="12" height="9" rx="3" fill="#7367F0" opacity="0.9"/>
+        <ellipse cx="41" cy="48.5" rx="3.5" ry="3.5" fill="#a78bfa"/>
+        <ellipse cx="59" cy="48.5" rx="3.5" ry="3.5" fill="#a78bfa"/>
+        <rect x="43" y="57" width="14" height="3" rx="1.5" fill="#7367F0"/>
+        <rect x="48" y="27" width="4" height="10" rx="2" fill="#7367F0"/>
+        <circle cx="50" cy="25" r="3" fill="#a78bfa"/>
+        <rect x="23" y="47" width="6" height="3" rx="1.5" fill="#7367F0"/>
+        <rect x="71" y="47" width="6" height="3" rx="1.5" fill="#7367F0"/>
+        <path d="M35 71 Q50 78 65 71" stroke="#7367F0" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    id: "ai-2", category: "AI", label: "Flow",
+    svg: (
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="50" fill="#0c1a2e"/>
+        <circle cx="50" cy="50" r="8" fill="#06b6d4" opacity="0.9"/>
+        <circle cx="25" cy="35" r="5" fill="#22d3ee" opacity="0.7"/>
+        <circle cx="75" cy="35" r="5" fill="#22d3ee" opacity="0.7"/>
+        <circle cx="25" cy="65" r="5" fill="#22d3ee" opacity="0.7"/>
+        <circle cx="75" cy="65" r="5" fill="#22d3ee" opacity="0.7"/>
+        <circle cx="50" cy="20" r="4" fill="#67e8f9" opacity="0.6"/>
+        <circle cx="50" cy="80" r="4" fill="#67e8f9" opacity="0.6"/>
+        <line x1="50" y1="42" x2="50" y2="24" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
+        <line x1="50" y1="58" x2="50" y2="76" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
+        <line x1="43" y1="45" x2="29" y2="37" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
+        <line x1="57" y1="45" x2="71" y2="37" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
+        <line x1="43" y1="55" x2="29" y2="63" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
+        <line x1="57" y1="55" x2="71" y2="63" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
+        <circle cx="50" cy="50" r="14" stroke="#06b6d4" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.4"/>
+        <circle cx="50" cy="50" r="25" stroke="#22d3ee" strokeWidth="0.5" strokeDasharray="2 4" opacity="0.3"/>
+      </svg>
+    ),
+  },
+];
+
+function getInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+function InitialsAvatar({ initials }: { initials: string }) {
+  return (
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="50" fill="#7367F0"/>
+      <text
+        x="50" y="50"
+        dominantBaseline="central"
+        textAnchor="middle"
+        fontSize="32"
+        fontWeight="700"
+        fontFamily="Inter, system-ui, sans-serif"
+        fill="white"
+        letterSpacing="1"
+      >
+        {initials}
+      </text>
+    </svg>
+  );
+}
+
+function AvatarPickerModal({
+  current,
+  agentName,
+  onSelect,
+  onClose,
+}: {
+  current: string;
+  agentName: string;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}) {
+  const categories = ["Male", "Female", "AI"] as const;
+  const initials = getInitials(agentName);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white dark:bg-[#111D30] rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-semibold text-[#262626] dark:text-[#C8D8EE]">Choose Avatar</h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] text-[#A3A3A3] dark:text-[#7A9BBF] transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div className="space-y-4">
+          {/* Initials */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#A3A3A3] dark:text-[#7A9BBF] mb-2">Initials</p>
+            <button
+              onClick={() => { onSelect("initials"); onClose(); }}
+              className={`relative w-16 h-16 rounded-full overflow-hidden transition-all ring-offset-2 ring-offset-white dark:ring-offset-[#111D30]
+                ${current === "preset:initials" ? "ring-2 ring-violet-600" : "ring-1 ring-gray-200 dark:ring-[#1E3050] hover:ring-2 hover:ring-violet-400"}`}
+            >
+              <InitialsAvatar initials={initials} />
+              {current === "preset:initials" && (
+                <div className="absolute inset-0 bg-violet-600/10 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <circle cx="9" cy="9" r="9" fill="#7367F0"/>
+                    <path d="M5 9l3 3 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              )}
+            </button>
+          </div>
+          {/* Preset avatars by category */}
+          {categories.map((cat) => (
+            <div key={cat}>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#A3A3A3] dark:text-[#7A9BBF] mb-2">{cat}</p>
+              <div className="flex gap-3">
+                {PRESET_AVATARS.filter((a) => a.category === cat).map((avatar) => (
+                  <button
+                    key={avatar.id}
+                    onClick={() => { onSelect(avatar.id); onClose(); }}
+                    className={`relative w-16 h-16 rounded-full overflow-hidden transition-all ring-offset-2 ring-offset-white dark:ring-offset-[#111D30]
+                      ${current === `preset:${avatar.id}` ? "ring-2 ring-violet-600" : "ring-1 ring-gray-200 dark:ring-[#1E3050] hover:ring-2 hover:ring-violet-400"}`}
+                  >
+                    {avatar.svg}
+                    {current === `preset:${avatar.id}` && (
+                      <div className="absolute inset-0 bg-violet-600/10 flex items-center justify-center">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                          <circle cx="9" cy="9" r="9" fill="#7367F0"/>
+                          <path d="M5 9l3 3 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -120,15 +598,149 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="py-5 border-b border-gray-100 dark:border-[#1E3050] last:border-b-0">
+    <div className="py-5 border-b border-[#F5F5F5] dark:border-[#1E3050] last:border-b-0">
       <div className="flex items-center gap-2 mb-3">
         <SettingsIcon />
-        <span className="text-sm font-semibold text-gray-700 dark:text-[#C8D8EE]">{label}</span>
+        <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">{label}</span>
         {info && <InfoIcon />}
         {extra && <div className="ml-auto">{extra}</div>}
       </div>
       {children}
     </div>
+  );
+}
+
+function BgImagePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
+
+  const activePreset = value.startsWith("preset:") ? BG_PRESETS.find(p => `preset:${p.id}` === value) : null;
+  const isCustom = value && !value.startsWith("preset:");
+
+  const previewStyle: React.CSSProperties = activePreset
+    ? { background: activePreset.css }
+    : isCustom
+      ? { backgroundImage: `url(${value})`, backgroundSize: "cover", backgroundPosition: "center" }
+      : { background: "#F5F5F5" };
+
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onChange(URL.createObjectURL(file));
+    e.target.value = "";
+    setModalOpen(false);
+  }
+
+  return (
+    <>
+      {/* Single swatch row */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setModalOpen(true)}
+          className="w-14 h-9 rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] shrink-0 hover:ring-2 hover:ring-violet-400 transition-all duration-150 overflow-hidden"
+          style={previewStyle}
+        />
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex-1 text-left text-sm text-[#404040] dark:text-[#C8D8EE] truncate hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+        >
+          {activePreset ? activePreset.label : isCustom ? "Custom image" : "None"}
+        </button>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#404040] dark:text-[#C8D8EE] hover:border-violet-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+        >
+          Change
+        </button>
+        {value && (
+          <button
+            onClick={() => onChange("")}
+            className="shrink-0 p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#737373] dark:text-[#7A9BBF] dark:hover:text-[#C8D8EE] transition-colors"
+            title="Clear"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        )}
+      </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
+        >
+          <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] dark:border-[#1E3050] shadow-[0_8px_32px_rgba(23,23,23,0.14)] w-80 p-5 animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">Choose Background</h3>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-1 rounded-lg text-[#A3A3A3] hover:text-[#404040] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {BG_PRESETS.map((preset) => {
+                const active = value === `preset:${preset.id}`;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => { onChange(`preset:${preset.id}`); setModalOpen(false); }}
+                    title={preset.label}
+                    className={`relative h-12 rounded-lg overflow-hidden transition-all duration-150
+                      ${active
+                        ? "ring-2 ring-violet-600 ring-offset-1"
+                        : "ring-1 ring-[#E5E5E5] dark:ring-[#1E3050] hover:ring-2 hover:ring-violet-400"
+                      }`}
+                    style={{ background: preset.css }}
+                  >
+                    {active && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              {/* Upload tile */}
+              <button
+                onClick={() => uploadRef.current?.click()}
+                title="Upload image"
+                className={`relative h-12 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-0.5 transition-all duration-150
+                  ${isCustom
+                    ? "border-violet-400 ring-2 ring-violet-600 ring-offset-1"
+                    : "border-[#E5E5E5] dark:border-[#1E3050] hover:border-violet-400"
+                  }`}
+                style={isCustom ? { backgroundImage: `url(${value})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+              >
+                {!isCustom && (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A3A3A3]">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span className="text-[9px] font-medium text-[#A3A3A3]">Upload</span>
+                  </>
+                )}
+                {isCustom && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF]">Click a preset or upload your own image</p>
+          </div>
+        </div>
+      )}
+
+      <input ref={uploadRef} type="file" accept="image/*" className="sr-only" onChange={handleUpload} />
+    </>
   );
 }
 
@@ -142,6 +754,7 @@ export default function GeneralSettings({
   onSave: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,23 +763,27 @@ export default function GeneralSettings({
     onChange({ agentAvatarUrl: url });
   };
 
+  const presetId = state.agentAvatarUrl?.startsWith("preset:") ? state.agentAvatarUrl.slice(7) : null;
+  const presetAvatar = presetId && presetId !== "initials" ? PRESET_AVATARS.find((a) => a.id === presetId) : null;
+  const isInitialsAvatar = presetId === "initials";
+
   return (
     <div className="px-6 py-2">
       {/* Identity group — Name, Role, Avatar */}
-      <div className="py-5 border-b border-gray-100 dark:border-[#1E3050]">
-        <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] divide-y divide-gray-100 dark:divide-[#1E3050] overflow-hidden">
+      <div className="py-5 border-b border-[#F5F5F5] dark:border-[#1E3050]">
+        <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] divide-y divide-[#E5E5E5] dark:divide-[#1E3050] overflow-hidden">
 
           {/* Agent Name */}
           <div className="px-5 py-4">
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
-              <span className="text-sm font-semibold text-gray-700 dark:text-[#C8D8EE]">Agent Name</span>
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Name</span>
             </div>
             <input
               type="text"
               value={state.agentName}
               onChange={(e) => onChange({ agentName: e.target.value })}
-              className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 transition-all"
+              className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 transition-all"
             />
           </div>
 
@@ -174,7 +791,7 @@ export default function GeneralSettings({
           <div className="px-5 py-4">
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
-              <span className="text-sm font-semibold text-gray-700 dark:text-[#C8D8EE]">Agent Role</span>
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Role</span>
               <InfoIcon />
               <a href="#" className="ml-auto text-xs text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1">
                 Learn more
@@ -185,42 +802,59 @@ export default function GeneralSettings({
               <select
                 value={state.agentRole}
                 onChange={(e) => onChange({ agentRole: e.target.value })}
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 appearance-none transition-all cursor-pointer"
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 appearance-none transition-all cursor-pointer"
               >
                 <option value="">Select a role…</option>
                 {AGENT_ROLE_OPTIONS.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[#7A9BBF] pointer-events-none" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3A3A3] dark:text-[#7A9BBF] pointer-events-none" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
+            {state.agentRole && AGENT_ROLE_DESCRIPTIONS[state.agentRole] && (
+              <p className="mt-2 text-xs text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed">
+                {AGENT_ROLE_DESCRIPTIONS[state.agentRole]}
+              </p>
+            )}
           </div>
 
           {/* Agent Avatar */}
           <div className="px-5 py-4">
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
-              <span className="text-sm font-semibold text-gray-700 dark:text-[#C8D8EE]">Agent Avatar</span>
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Avatar</span>
               <InfoIcon />
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full border-2 border-gray-200 dark:border-[#1E3050] overflow-hidden bg-gray-100 dark:bg-[#162238] shrink-0 flex items-center justify-center">
-                {state.agentAvatarUrl ? (
+              <button
+                onClick={() => setAvatarModalOpen(true)}
+                className="relative w-14 h-14 rounded-full border-2 border-[#E5E5E5] dark:border-[#1E3050] overflow-hidden bg-[#F5F5F5] dark:bg-[#162238] shrink-0 flex items-center justify-center group hover:border-violet-400 transition-colors"
+              >
+                {isInitialsAvatar ? (
+                  <div className="w-full h-full"><InitialsAvatar initials={getInitials(state.agentName)} /></div>
+                ) : presetAvatar ? (
+                  <div className="w-full h-full">{presetAvatar.svg}</div>
+                ) : state.agentAvatarUrl ? (
                   <img src={state.agentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-300 dark:text-[#2A4060]">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#D4D4D4] dark:text-[#2A4060]">
                     <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5"/>
                     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 )}
-              </div>
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+              </button>
               <div className="flex-1">
-                <p className="text-xs text-gray-400 dark:text-[#7A9BBF] mb-2">Upload square image only. Allowed are JPG, GIF or PNG image up to 800 Kb.</p>
+                <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mb-2">Upload square image only. Allowed are JPG, GIF or PNG image up to 800 Kb.</p>
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-[#1E3050] text-gray-600 dark:text-[#C8D8EE] hover:bg-gray-50 dark:hover:bg-[#1E3050] transition-colors flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] text-[#525252] dark:text-[#C8D8EE] hover:bg-[#FAFAFA] dark:hover:bg-[#1E3050] transition-colors flex items-center gap-1.5"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 4l3-3 3 3M1 9v1.5A.5.5 0 001.5 11h9a.5.5 0 00.5-.5V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   Change Avatar
@@ -233,83 +867,129 @@ export default function GeneralSettings({
         </div>
       </div>
 
-      {/* Agent Color Scheme */}
-      <Section label="Agent Color Scheme" info>
-        <RadioGroup
-          options={[
-            { value: "adaptive", label: "Adaptive" },
-            { value: "legacy", label: "Legacy" },
-          ]}
-          value={state.agentColorScheme}
-          onChange={(v) => onChange({ agentColorScheme: v })}
-        />
-      </Section>
+      {/* Color group — Scheme + Color */}
+      <div className="py-5 border-b border-[#F5F5F5] dark:border-[#1E3050]">
+        <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] divide-y divide-[#E5E5E5] dark:divide-[#1E3050] overflow-hidden">
 
-      {/* Agent Color */}
-      <Section label="Agent Color">
-        <p className="text-xs text-gray-400 dark:text-[#7A9BBF] mb-2">Primary color</p>
-        <ColorInput value={state.agentColor} onChange={(v) => onChange({ agentColor: v })} />
-      </Section>
+          {/* Agent Color Scheme */}
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <SettingsIcon />
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Color Scheme</span>
+              <InfoIcon />
+            </div>
+            <RadioGroup
+              options={[
+                { value: "adaptive", label: "Adaptive" },
+                { value: "legacy", label: "Legacy" },
+              ]}
+              value={state.agentColorScheme}
+              onChange={(v) => onChange({ agentColorScheme: v })}
+            />
+          </div>
 
-      {/* Agent Style */}
-      <Section label="Agent Style" info>
-        <RadioGroup
-          options={[
-            { value: "sharp", label: "Sharp" },
-            { value: "soft", label: "Soft" },
-            { value: "round", label: "Round" },
-          ]}
-          value={state.agentStyle}
-          onChange={(v) => onChange({ agentStyle: v })}
-        />
-      </Section>
+          {/* Agent Color */}
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <SettingsIcon />
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Color</span>
+            </div>
+            <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mb-2">Primary color</p>
+            <ColorInput value={state.agentColor} onChange={(v) => onChange({ agentColor: v })} />
+          </div>
 
-      {/* Font Family */}
-      <Section label="Font Family">
-        <RadioGroup
-          options={[
-            { value: "inter", label: "Inter" },
-            { value: "public-sans", label: "Public Sans" },
-          ]}
-          value={state.fontFamily}
-          onChange={(v) => onChange({ fontFamily: v })}
-        />
-      </Section>
+          {/* Background */}
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <SettingsIcon />
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Background</span>
+            </div>
+            <div className="inline-flex items-center bg-[#F5F5F5] dark:bg-[#162238] rounded-lg p-0.5 mb-3">
+              {(["image", "color"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => onChange({ backgroundType: type })}
+                  className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all duration-150 whitespace-nowrap
+                    ${state.backgroundType === type
+                      ? "bg-white dark:bg-[#1E3050] text-[#262626] dark:text-[#C8D8EE] font-semibold shadow-sm"
+                      : "text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
+                    }`}
+                >
+                  {type === "image" ? "Background Image" : "Background Color"}
+                </button>
+              ))}
+            </div>
+            {state.backgroundType === "color" && (
+              <ColorInput value={state.backgroundColor} onChange={(v) => onChange({ backgroundColor: v })} />
+            )}
+            {state.backgroundType === "image" && (
+              <BgImagePicker
+                value={state.backgroundImageUrl}
+                onChange={(v) => onChange({ backgroundImageUrl: v })}
+              />
+            )}
+          </div>
 
-      {/* Background */}
-      <Section label="Background">
-        <div className="flex items-center gap-6 mb-3">
-          {(["image", "color"] as const).map((type) => (
-            <label key={type} className="flex items-center gap-2 cursor-pointer">
-              <div
-                onClick={() => onChange({ backgroundType: type })}
-                className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer
-                  ${state.backgroundType === type
-                    ? "border-violet-600 bg-white dark:bg-[#111D30]"
-                    : "border-gray-300 dark:border-[#2A4060] bg-white dark:bg-[#111D30]"
-                  }`}
-              >
-                {state.backgroundType === type && (
-                  <div className="w-2 h-2 rounded-full bg-violet-600" />
-                )}
-              </div>
-              <span
-                onClick={() => onChange({ backgroundType: type })}
-                className={`text-sm cursor-pointer capitalize transition-colors
-                  ${state.backgroundType === type
-                    ? "text-gray-800 dark:text-[#C8D8EE] font-medium"
-                    : "text-gray-500 dark:text-[#7A9BBF]"
-                  }`}
-              >
-                Background {type === "image" ? "Image" : "Color"}
-              </span>
-            </label>
-          ))}
         </div>
-        {state.backgroundType === "color" && (
-          <ColorInput value={state.backgroundColor} onChange={(v) => onChange({ backgroundColor: v })} />
-        )}
-      </Section>
+      </div>
+
+      {/* Style group — Agent Style + Font Family */}
+      <div className="py-5 border-b border-[#F5F5F5] dark:border-[#1E3050]">
+        <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] divide-y divide-[#E5E5E5] dark:divide-[#1E3050] overflow-hidden">
+
+          {/* Agent Style */}
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <SettingsIcon />
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Style</span>
+              <InfoIcon />
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {(["sharp", "soft", "round"] as const).map((style) => {
+                const active = state.agentStyle === style;
+                const label = style.charAt(0).toUpperCase() + style.slice(1);
+                const radius = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-xl" : "rounded-full";
+                return (
+                  <label
+                    key={style}
+                    className="flex items-center gap-2.5 cursor-pointer group"
+                    onClick={() => onChange({ agentStyle: style })}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
+                      ${active ? "border-violet-600 bg-white dark:bg-[#111D30]" : "border-gray-300 dark:border-[#2A4060] bg-white dark:bg-[#111D30]"}`}
+                    >
+                      {active && <div className="w-2 h-2 rounded-full bg-violet-600" />}
+                    </div>
+                    <span className={`text-sm transition-colors flex-1
+                      ${active ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF] group-hover:text-[#404040] dark:group-hover:text-[#C8D8EE]"}`}
+                    >
+                      {label}
+                    </span>
+                    <div className={`w-14 h-7 bg-blue-100 dark:bg-blue-900/30 shrink-0 ${radius}`} />
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Font Family */}
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <SettingsIcon />
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Font Family</span>
+            </div>
+            <RadioGroup
+              options={[
+                { value: "inter", label: "Inter" },
+                { value: "public-sans", label: "Public Sans" },
+              ]}
+              value={state.fontFamily}
+              onChange={(v) => onChange({ fontFamily: v })}
+            />
+          </div>
+
+        </div>
+      </div>
 
       {/* Save */}
       <div className="pt-4 pb-8">
@@ -320,6 +1000,15 @@ export default function GeneralSettings({
           Save Settings
         </button>
       </div>
+
+      {avatarModalOpen && (
+        <AvatarPickerModal
+          current={state.agentAvatarUrl}
+          agentName={state.agentName}
+          onSelect={(id) => onChange({ agentAvatarUrl: `preset:${id}` })}
+          onClose={() => setAvatarModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

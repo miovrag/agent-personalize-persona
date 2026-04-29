@@ -45,7 +45,7 @@ export default function StructuredIdentity({ role, mission, audience, onChange }
             <div className="flex items-center justify-between">
               <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
                 {field.label}
-                <span className="ml-2 text-xs font-normal text-gray-400 dark:text-[#7A9BBF]">
+                <span className="ml-2 text-xs font-normal text-[#A3A3A3] dark:text-[#7A9BBF]">
                   {field.hint}
                 </span>
               </label>
@@ -60,7 +60,7 @@ export default function StructuredIdentity({ role, mission, audience, onChange }
               value={val}
               onChange={(e) => onChange({ [field.key]: e.target.value })}
               placeholder={field.placeholder}
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] hover:border-gray-300 dark:hover:border-[#1E3050] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] transition-all"
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] hover:border-gray-300 dark:hover:border-[#1E3050] placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF] text-[#262626] dark:text-[#C8D8EE] transition-all"
             />
           </div>
         );

@@ -65,7 +65,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
           <label className="text-sm font-semibold text-[#2F3D39] dark:text-[#C8D8EE]">
             What can this agent trigger?
           </label>
-          <p className="text-xs text-gray-400 dark:text-[#7A9BBF] mt-0.5">
+          <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mt-0.5">
             Beyond answering — agents can take real actions
           </p>
         </div>
@@ -88,7 +88,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
               className={`rounded-xl border transition-all overflow-hidden
                 ${isOn
                   ? "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950"
-                  : "border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#111D30] hover:border-gray-300 dark:hover:border-[#1E3050]"
+                  : "border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#111D30] hover:border-gray-300 dark:hover:border-[#1E3050]"
                 }`}
             >
               <button
@@ -98,22 +98,22 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
                 <span className="text-lg leading-none mt-0.5 select-none">{outcome.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className={`text-xs font-semibold leading-tight ${isOn ? "text-violet-800 dark:text-violet-300" : "text-gray-700 dark:text-[#C8D8EE]"}`}>
+                    <p className={`text-xs font-semibold leading-tight ${isOn ? "text-violet-800 dark:text-violet-300" : "text-[#404040] dark:text-[#C8D8EE]"}`}>
                       {outcome.label}
                     </p>
                     {isCustom && (
-                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#162238] text-gray-400 dark:text-[#7A9BBF]">
+                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[#F5F5F5] dark:bg-[#162238] text-[#A3A3A3] dark:text-[#7A9BBF]">
                         custom
                       </span>
                     )}
                   </div>
                   {isExpanded && outcome.description && (
-                    <p className="text-xs text-gray-500 dark:text-[#7A9BBF] mt-1 leading-relaxed">
+                    <p className="text-xs text-[#737373] dark:text-[#7A9BBF] mt-1 leading-relaxed">
                       {outcome.description}
                     </p>
                   )}
                 </div>
-                <span className="text-gray-300 dark:text-[#2a4060] text-xs mt-0.5 shrink-0">
+                <span className="text-[#D4D4D4] dark:text-[#2a4060] text-xs mt-0.5 shrink-0">
                   {isExpanded ? "▲" : "▼"}
                 </span>
               </button>
@@ -159,7 +159,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
 
           {/* Icon picker */}
           <div className="space-y-1">
-            <p className="text-xs text-gray-500 dark:text-[#7A9BBF]">Icon</p>
+            <p className="text-xs text-[#737373] dark:text-[#7A9BBF]">Icon</p>
             <div className="flex gap-1.5 flex-wrap">
               {ICON_OPTIONS.map((icon) => (
                 <button
@@ -168,7 +168,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
                   className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all
                     ${newIcon === icon
                       ? "bg-violet-600 ring-2 ring-violet-400"
-                      : "bg-white dark:bg-[#162238] border border-gray-200 dark:border-[#1E3050] hover:border-violet-300 dark:hover:border-violet-700"
+                      : "bg-white dark:bg-[#162238] border border-[#E5E5E5] dark:border-[#1E3050] hover:border-violet-300 dark:hover:border-violet-700"
                     }`}
                 >
                   {icon}
@@ -178,7 +178,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs text-gray-500 dark:text-[#7A9BBF]">Label <span className="text-red-400">*</span></p>
+            <p className="text-xs text-[#737373] dark:text-[#7A9BBF]">Label <span className="text-red-400">*</span></p>
             <input
               type="text"
               value={newLabel}
@@ -186,18 +186,18 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
               onKeyDown={(e) => { if (e.key === "Enter") createCustomOutcome(); if (e.key === "Escape") setShowCreateForm(false); }}
               placeholder="e.g. Log to spreadsheet"
               autoFocus
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF]"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF]"
             />
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs text-gray-500 dark:text-[#7A9BBF]">Description <span className="text-gray-400">(optional)</span></p>
+            <p className="text-xs text-[#737373] dark:text-[#7A9BBF]">Description <span className="text-[#A3A3A3]">(optional)</span></p>
             <input
               type="text"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="What does this outcome do?"
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF]"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF]"
             />
           </div>
 
@@ -211,7 +211,7 @@ export default function OutcomeCards({ selected, onChange }: OutcomeCardsProps) 
             </button>
             <button
               onClick={() => { setShowCreateForm(false); setNewLabel(""); setNewDescription(""); setNewIcon("⚡"); }}
-              className="px-4 py-2 text-xs text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE] transition-colors"
+              className="px-4 py-2 text-xs text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE] transition-colors"
             >
               Cancel
             </button>

@@ -459,7 +459,7 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
       <button
         onClick={onSkip}
         aria-label="Close setup"
-        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-all text-sm"
+        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-all text-sm"
       >
         ✕
       </button>
@@ -475,11 +475,11 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
         <div className="flex items-center justify-between mt-1.5">
           <button
             onClick={onSkip}
-            className="text-xs text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] transition-colors"
+            className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] transition-colors"
           >
             Skip setup
           </button>
-          <p className="text-xs text-gray-400 dark:text-[#7A9BBF]">
+          <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF]">
             {stepIndex + 1} of {totalSteps}
           </p>
         </div>
@@ -488,15 +488,15 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
       <div className="w-full">
         {/* Agent name context */}
         {stepIndex === 0 && (
-          <p className="text-sm text-gray-500 dark:text-[#7A9BBF] mb-3">
+          <p className="text-sm text-[#737373] dark:text-[#7A9BBF] mb-3">
             Setting up{" "}
-            <span className="font-medium text-gray-700 dark:text-[#C8D8EE]">{agentName}</span>
+            <span className="font-medium text-[#404040] dark:text-[#C8D8EE]">{agentName}</span>
           </p>
         )}
 
         {/* Phase label */}
         {currentQuestion.phase && (
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          <p className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-widest mb-3">
             {currentQuestion.phase}
           </p>
         )}
@@ -504,16 +504,16 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
         {/* Card */}
         <div
           key={cardKey}
-          className="animate-slide-up bg-white dark:bg-[#111D30] rounded-2xl border border-gray-200 dark:border-[#1E3050] p-6 shadow-sm"
+          className="animate-slide-up bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] dark:border-[#1E3050] p-6 shadow-sm"
         >
           {/* Top row: QUESTION N + type badge + stat badge */}
           <div className="flex flex-wrap items-center gap-2 mb-1">
             {currentQuestion.conditional && (
-              <span className="text-xs italic text-gray-400 dark:text-[#7A9BBF] w-full mb-0.5">
+              <span className="text-xs italic text-[#A3A3A3] dark:text-[#7A9BBF] w-full mb-0.5">
                 {currentQuestion.conditional}
               </span>
             )}
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+            <span className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-widest">
               QUESTION {stepIndex + 1}
             </span>
             {currentQuestion.selectType === "single" ? (
@@ -526,7 +526,7 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
               </span>
             )}
             {currentQuestion.stat && (
-              <span className="bg-gray-100 text-gray-500 dark:bg-[#162238] dark:text-[#7A9BBF] text-xs font-medium px-2.5 py-0.5 rounded-full">
+              <span className="bg-[#F5F5F5] text-[#737373] dark:bg-[#162238] dark:text-[#7A9BBF] text-xs font-medium px-2.5 py-0.5 rounded-full">
                 {currentQuestion.stat}
               </span>
             )}
@@ -538,7 +538,7 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
           </h2>
 
           {/* Subtitle */}
-          <p className="text-sm text-gray-500 dark:text-[#7A9BBF] mt-1">
+          <p className="text-sm text-[#737373] dark:text-[#7A9BBF] mt-1">
             {currentQuestion.subtitle}
           </p>
 
@@ -554,7 +554,7 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
                     className={`px-4 py-2.5 text-sm font-medium rounded-xl border transition-all ${
                       isSelected
                         ? "border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                        : "border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#162238] text-gray-700 dark:text-[#C8D8EE] hover:border-violet-300 dark:hover:border-violet-600 hover:text-violet-700 dark:hover:text-violet-300"
+                        : "border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#404040] dark:text-[#C8D8EE] hover:border-violet-300 dark:hover:border-violet-600 hover:text-violet-700 dark:hover:text-violet-300"
                     }`}
                   >
                     {option}
@@ -568,7 +568,7 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
                     className={`px-4 py-2.5 text-sm font-medium rounded-xl border transition-all ${
                       isSelected
                         ? "border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                        : "border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#162238] text-gray-700 dark:text-[#C8D8EE] hover:border-violet-300 dark:hover:border-violet-600 hover:text-violet-700 dark:hover:text-violet-300"
+                        : "border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#404040] dark:text-[#C8D8EE] hover:border-violet-300 dark:hover:border-violet-600 hover:text-violet-700 dark:hover:text-violet-300"
                     }`}
                   >
                     {option}
@@ -595,7 +595,7 @@ export default function OnboardingChat({ agentName, onSubmit, onSkip }: Props) {
           )}
 
           {/* Data signal */}
-          <p className="text-xs text-gray-500 dark:text-[#7A9BBF] mt-4 leading-relaxed">
+          <p className="text-xs text-[#737373] dark:text-[#7A9BBF] mt-4 leading-relaxed">
             <span className="font-bold">Data signal:</span> {currentQuestion.dataSignal}
           </p>
         </div>

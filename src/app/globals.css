@@ -1,17 +1,35 @@
 @import "tailwindcss";
 
+/* ── CustomGPT Design System — remap Tailwind violet to CG primary ── */
+@theme {
+  --color-violet-50:  #F4F3FE;
+  --color-violet-100: #EAE8FD;
+  --color-violet-200: #D5D1FB;
+  --color-violet-300: #A39BF6;
+  --color-violet-400: #8C82F3;
+  --color-violet-500: #7367F0;
+  --color-violet-600: #7367F0;
+  --color-violet-700: #685DD8;
+  --color-violet-800: #5C53C0;
+  --color-violet-900: #2A256B;
+}
+
 :root {
-  --background: #F5F5F5;
-  --foreground: #2F3D39;
-  --primary: #7c3aed;
-  --primary-hover: #6d28d9;
+  --background: #FAFAFA;
+  --foreground: #404040;
+  --primary: #7367F0;
+  --primary-hover: #685DD8;
+  --primary-active: #5C53C0;
+  --primary-tint: #EAE8FD;
   --card-bg: #ffffff;
-  --card-border: #e5e7eb;
+  --card-border: #E5E5E5;
   --input-bg: #ffffff;
-  --input-border: #e5e7eb;
+  --input-border: #E5E5E5;
   --sidebar-bg: #ffffff;
-  --muted: #6b7280;
-  --muted-bg: #f9fafb;
+  --muted: #737373;
+  --muted-bg: #F5F5F5;
+  --divider: #E5E5E5;
+  --heading: #171717;
 }
 
 html.dark {
@@ -34,7 +52,7 @@ html.dark body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), Inter, sans-serif;
+  font-family: var(--font-inter), Inter, system-ui, -apple-system, sans-serif;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -42,9 +60,8 @@ body {
 @custom-variant dark (&:where(.dark, .dark *));
 
 .heading-h5 {
-  color: var(--Typography-Color-Heading, #212121);
-  font-feature-settings: 'liga' off, 'clig' off;
-  font-family: var(--font-inter), Inter, sans-serif;
+  color: #171717;
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
   font-size: 18px;
   font-style: normal;
   font-weight: 600;
@@ -84,25 +101,25 @@ input[type="range"]::-webkit-slider-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #7c3aed;
+  background: #7367F0;
   cursor: pointer;
   border: 2px solid white;
-  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.4);
-  transition: box-shadow 0.15s ease;
+  box-shadow: 0 1px 4px rgba(115,103,240,0.35);
+  transition: box-shadow 0.12s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  box-shadow: 0 1px 8px rgba(124, 58, 237, 0.6);
+  box-shadow: 0 2px 8px rgba(115,103,240,0.45);
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #7c3aed;
+  background: #7367F0;
   cursor: pointer;
   border: 2px solid white;
-  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 1px 4px rgba(115,103,240,0.35);
 }
 
 /* CustomGPT embed fills parent */

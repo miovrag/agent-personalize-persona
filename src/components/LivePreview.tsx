@@ -40,13 +40,13 @@ export default function LivePreview({ agentName, previewData, tone }: LivePrevie
   const accentColor = tone < 30
     ? "#2563eb"
     : tone < 60
-    ? "#7c3aed"
+    ? "#7367F0"
     : tone < 80
     ? "#ea580c"
     : "#16a34a";
 
   return (
-    <div className="flex flex-col h-full rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+    <div className="flex flex-col h-full rounded-2xl overflow-hidden border border-[#E5E5E5] bg-white shadow-sm">
       {/* Preview header */}
       <div
         className="px-4 py-3 flex items-center justify-between"
@@ -68,7 +68,7 @@ export default function LivePreview({ agentName, previewData, tone }: LivePrevie
       </div>
 
       {/* Chat area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAFAFA]">
         {/* Greeting bubble */}
         <div key={`greeting-${key}`} className="flex gap-2.5 preview-refresh">
           <div
@@ -77,8 +77,8 @@ export default function LivePreview({ agentName, previewData, tone }: LivePrevie
           >
             {initials.charAt(0)}
           </div>
-          <div className="bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm border border-gray-100 max-w-[85%]">
-            <p className="text-sm text-gray-700">{displayData.greeting}</p>
+          <div className="bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] max-w-[85%]">
+            <p className="text-sm text-[#404040]">{displayData.greeting}</p>
           </div>
         </div>
 
@@ -87,7 +87,7 @@ export default function LivePreview({ agentName, previewData, tone }: LivePrevie
           {displayData.suggestions.map((s, i) => (
             <button
               key={i}
-              className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors truncate"
+              className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-white border border-[#E5E5E5] text-[#525252] hover:border-gray-300 hover:bg-[#FAFAFA] transition-colors truncate"
               style={{ borderLeftColor: accentColor, borderLeftWidth: "2px" }}
             >
               {s}
@@ -98,7 +98,7 @@ export default function LivePreview({ agentName, previewData, tone }: LivePrevie
         {/* Sample user message */}
         <div key={`user-${key}`} className="flex justify-end preview-refresh" style={{ animationDelay: "0.15s" }}>
           <div className="bg-gray-200 rounded-2xl rounded-tr-sm px-3.5 py-2.5 max-w-[75%]">
-            <p className="text-sm text-gray-700">{displayData.suggestions[0]}</p>
+            <p className="text-sm text-[#404040]">{displayData.suggestions[0]}</p>
           </div>
         </div>
 
@@ -110,16 +110,16 @@ export default function LivePreview({ agentName, previewData, tone }: LivePrevie
           >
             {initials.charAt(0)}
           </div>
-          <div className="bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm border border-gray-100 max-w-[85%]">
-            <p className="text-sm text-gray-700 leading-relaxed">{displayData.response}</p>
+          <div className="bg-white rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] max-w-[85%]">
+            <p className="text-sm text-[#404040] leading-relaxed">{displayData.response}</p>
           </div>
         </div>
       </div>
 
       {/* Input bar */}
-      <div className="px-4 py-3 border-t border-gray-100 bg-white">
-        <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-full">
-          <span className="text-xs text-gray-400 flex-1">Ask something...</span>
+      <div className="px-4 py-3 border-t border-[#F5F5F5] bg-white">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#F5F5F5] rounded-full">
+          <span className="text-xs text-[#A3A3A3] flex-1">Ask something...</span>
           <button
             className="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
             style={{ backgroundColor: accentColor }}

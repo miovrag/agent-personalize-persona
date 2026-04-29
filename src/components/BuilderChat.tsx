@@ -6,14 +6,21 @@ import { generateInstruction } from "./generateInstruction";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DiffEntry = { label: string; type: "add" | "change" | "remove" };
+type DiffEntry = { label: string; type: "add" | "change" | "remove"; swatch?: string };
+
+interface Attachment {
+  name: string;
+  url: string;
+  mimeType: string;
+}
 
 interface Message {
   id: string;
   role: "user" | "assistant" | "error";
   text: string;
   diff?: DiffEntry[];
-  retryText?: string; // original user text to retry
+  retryText?: string;
+  attachments?: Attachment[];
 }
 
 interface Props {
@@ -217,20 +224,86 @@ function computeDiff(before: PersonaState, patch: Partial<PersonaState>): DiffEn
   return entries;
 }
 
+function relatedSettingsSuggestions(patch: Partial<PersonaState>, s: PersonaState): string[] {
+  const keys = Object.keys(patch) as (keyof PersonaState)[];
+  const out: string[] = [];
+
+  if (keys.includes("agentAvatarUrl")) {
+    if (!s.inChatAgentAvatar) out.push("Enable agent avatar in chat messages");
+    if (!s.titleAvatarEnabled) out.push("Show avatar in the chat title bar");
+    if (!s.spotlightAvatarEnabled) out.push("Enable spotlight avatar at the top of chat");
+  }
+
+  if (keys.includes("agentColor")) {
+    if (s.titleColor && s.titleColor !== patch.agentColor)
+      out.push(`Set title color to ${patch.agentColor}`);
+    out.push("Update agent style to complement the new color");
+    if (s.backgroundType === "color") out.push("Update background color to match brand");
+  }
+
+  if (keys.some(k => ["agentName", "role", "agentRole"].includes(k))) {
+    if (!s.agentTitle) out.push("Set a visible agent title for the chat header");
+    out.push("Update the agent's mission to match the new role");
+  }
+
+  if (keys.includes("mission") || keys.includes("audience")) {
+    out.push("Add guardrails to protect scope for this audience");
+    if (!s.starterQuestions.length) out.push("Add starter questions for this use case");
+  }
+
+  if (keys.includes("tone")) {
+    if (!s.styles.length) out.push("Add a communication style to reinforce the tone");
+    out.push("Update guardrails to match the new tone");
+  }
+
+  if (keys.some(k => ["styles", "guardrails"].includes(k))) {
+    out.push("Adjust tone slider to align with this style");
+  }
+
+  if (keys.includes("iDontKnowMessage")) {
+    out.push("Set a custom error message for failed moderation");
+  }
+
+  if (keys.includes("placeholderPrompt")) {
+    out.push("Add starter questions to guide first-time users");
+  }
+
+  if (keys.some(k => ["agentVisibility", "recaptcha"].includes(k))) {
+    out.push("Review whitelisted domains for this visibility setting");
+  }
+
+  // deduplicate, max 3
+  return [...new Set(out)].slice(0, 3);
+}
+
+// ─── Persistent chat store (survives tab switches / remounts) ─────────────────
+
+const INIT_ID = "init";
+const INIT_MESSAGE: Message = { id: INIT_ID, role: "assistant", text: "What would you like to change? Pick a suggestion or type your own." };
+
+let _msgs: Message[] = [INIT_MESSAGE];
+let _followUpQ: string | null = null;
+let _followUpS: string[] | null = null;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function BuilderChat({ state, onApply }: Props) {
-  const INIT_ID = "init";
-  const [messages, setMessages] = useState<Message[]>([
-    { id: INIT_ID, role: "assistant", text: "What would you like to change? Pick a suggestion or type your own." },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => [..._msgs]);
   const [input, setInput] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<Attachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [chipsExpanded, setChipsExpanded] = useState(false);
   const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(true);
-  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
-  const [followUpSuggestions, setFollowUpSuggestions] = useState<string[] | null>(null);
+  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(() => _followUpQ);
+  const [followUpSuggestions, setFollowUpSuggestions] = useState<string[] | null>(() => _followUpS);
   const [phIndex, setPhIndex] = useState(0);
   const [phVisible, setPhVisible] = useState(true);
+
+  // Sync to module store so history survives tab switches / remounts
+  useEffect(() => { _msgs = messages; }, [messages]);
+  useEffect(() => { _followUpQ = followUpQuestion; }, [followUpQuestion]);
+  useEffect(() => { _followUpS = followUpSuggestions; }, [followUpSuggestions]);
 
   const PLACEHOLDERS = [
     "Make responses shorter and more direct…",
@@ -323,26 +396,144 @@ export default function BuilderChat({ state, onApply }: Props) {
     setCanUndo(false);
   }
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    const attachments = files.map(f => ({
+      name: f.name,
+      url: URL.createObjectURL(f),
+      mimeType: f.type,
+    }));
+    setAttachedFiles(prev => [...prev, ...attachments]);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    const attachments = files.map(f => ({
+      name: f.name,
+      url: URL.createObjectURL(f),
+      mimeType: f.type,
+    }));
+    if (attachments.length) setAttachedFiles(prev => [...prev, ...attachments]);
+  }
+
+  function removeAttachment(index: number) {
+    setAttachedFiles(prev => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
   async function sendText(text: string) {
-    if (!text.trim() || loading) return;
+    const trimmed = text.trim();
+    if (!trimmed && attachedFiles.length === 0) return;
+    if (loading) return;
     setFollowUpQuestion(null);
     setFollowUpSuggestions(null);
     setCanUndo(false);
     prevStateRef.current = null;
     setInput("");
-    // Reset textarea height after clearing
     const ta = document.querySelector<HTMLTextAreaElement>("#builder-input");
     if (ta) { ta.style.height = "auto"; }
 
-    const userMsg: Message = { id: `${Date.now()}-u`, role: "user", text };
+    const snapped = [...attachedFiles];
+    setAttachedFiles([]);
+
+    const apiText = snapped.length
+      ? `${trimmed}${trimmed ? "\n" : ""}[Attached: ${snapped.map(a => a.name).join(", ")}]`
+      : trimmed;
+
+    const userMsg: Message = {
+      id: `${Date.now()}-u`,
+      role: "user",
+      text: trimmed || `Attached ${snapped.length} file${snapped.length > 1 ? "s" : ""}`,
+      attachments: snapped.length ? snapped : undefined,
+    };
     setMessages((prev) => [...prev, userMsg]);
+
+    // Primary color intent: message contains a color value + mentions primary/brand/chat color
+    const colorKeywords = /\b(primary|brand|main|accent|chat|theme)\s*(color|colour)?\b|\bcolor\b.*\bprimary\b/i;
+    const extractColor = (s: string): string | null => {
+      // hex: #rgb, #rrggbb, #rrggbbaa
+      const hex = s.match(/#([0-9a-fA-F]{3,8})\b/);
+      if (hex) {
+        const h = hex[1];
+        if (h.length === 3) return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+        if (h.length === 6 || h.length === 8) return `#${h.slice(0, 6)}`;
+      }
+      // rgb(r,g,b) / rgba(r,g,b,a)
+      const rgb = s.match(/rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+      if (rgb) {
+        const toHex = (n: number) => n.toString(16).padStart(2, "0");
+        return `#${toHex(+rgb[1])}${toHex(+rgb[2])}${toHex(+rgb[3])}`;
+      }
+      // hsl(h,s%,l%)
+      const hsl = s.match(/hsla?\(\s*(\d+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%/i);
+      if (hsl) {
+        const h2 = +hsl[1] / 360, sl = +hsl[2] / 100, l = +hsl[3] / 100;
+        const a2 = sl * Math.min(l, 1 - l);
+        const f = (n: number) => {
+          const k = (n + h2 * 12) % 12;
+          return Math.round((l - a2 * Math.max(-1, Math.min(k - 3, 9 - k, 1))) * 255);
+        };
+        const toHex = (n: number) => n.toString(16).padStart(2, "0");
+        return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+      }
+      return null;
+    };
+    const parsedColor = extractColor(trimmed);
+    if (parsedColor && colorKeywords.test(trimmed)) {
+      const colorPatch = { agentColor: parsedColor };
+      prevStateRef.current = { ...state };
+      onApply(colorPatch);
+      setCanUndo(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-a`,
+          role: "assistant",
+          text: `Done — I've set the primary color to ${parsedColor}.`,
+          diff: [{ label: `Primary Color → ${parsedColor}`, type: "change" as const, swatch: parsedColor }],
+        },
+      ]);
+      const related = relatedSettingsSuggestions(colorPatch, state);
+      if (related.length) setFollowUpSuggestions(related);
+      setLoading(false);
+      return;
+    }
+
+    // Avatar intent: image attached + message mentions avatar/profile/icon
+    const imageAttachment = snapped.find(a => a.mimeType.startsWith("image/"));
+    const avatarKeywords = /\b(avatar|profile\s*(pic(ture)?|image|photo)?|agent\s*(icon|image|photo)|headshot|icon)\b/i;
+    if (imageAttachment && avatarKeywords.test(trimmed)) {
+      const avatarPatch = { agentAvatarUrl: imageAttachment.url };
+      prevStateRef.current = { ...state };
+      onApply(avatarPatch);
+      setCanUndo(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-a`,
+          role: "assistant",
+          text: "Done — I've set the uploaded image as the agent avatar.",
+          diff: [{ label: "Agent Avatar", type: "change" as const }],
+        },
+      ]);
+      const related = relatedSettingsSuggestions(avatarPatch, state);
+      if (related.length) setFollowUpSuggestions(related);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await fetch("/api/natural-mode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, state }),
+        body: JSON.stringify({ message: apiText, state }),
       });
 
       const data = await res.json();
@@ -376,7 +567,12 @@ export default function BuilderChat({ state, onApply }: Props) {
       setMessages((prev) => [...prev, assistantMsg]);
 
       if (data.followUp) setFollowUpQuestion(data.followUp);
-      if (data.nextSuggestions?.length) setFollowUpSuggestions(data.nextSuggestions);
+      const aiSuggestions: string[] = data.nextSuggestions ?? [];
+      const settingsSuggestions = data.patch
+        ? relatedSettingsSuggestions(data.patch, state)
+        : [];
+      const merged = [...new Set([...aiSuggestions, ...settingsSuggestions])].slice(0, 4);
+      if (merged.length) setFollowUpSuggestions(merged);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -442,7 +638,7 @@ export default function BuilderChat({ state, onApply }: Props) {
               <img src="/customgpt-mark.svg" alt="" width={44} height={44} className="star-icon relative z-10" />
               <div className="logo-shimmer absolute inset-0 z-20 pointer-events-none" />
             </div>
-            <p className="text-sm text-gray-400 dark:text-[#7A9BBF] leading-relaxed max-w-xs">
+            <p className="text-sm text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed max-w-xs">
               {messages[0].text}
             </p>
           </div>
@@ -456,9 +652,30 @@ export default function BuilderChat({ state, onApply }: Props) {
                   ? "bg-violet-600 text-white rounded-br-sm"
                   : msg.role === "error"
                     ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-bl-sm"
-                    : "bg-white dark:bg-[#111D30] text-gray-700 dark:text-[#C8D8EE] border border-gray-100 dark:border-[#1E3050] rounded-bl-sm"
+                    : "bg-white dark:bg-[#111D30] text-[#404040] dark:text-[#C8D8EE] border border-[#F5F5F5] dark:border-[#1E3050] rounded-bl-sm"
                 }`}
             >
+              {msg.attachments && msg.attachments.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {msg.attachments.map((att, i) => (
+                    att.mimeType.startsWith("image/") ? (
+                      <img
+                        key={i}
+                        src={att.url}
+                        alt={att.name}
+                        className="w-28 h-20 object-cover rounded-lg border border-white/20"
+                      />
+                    ) : (
+                      <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/20 text-xs font-medium">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        {att.name}
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
               {msg.text}
               {msg.role === "error" && msg.retryText && (
                 <button
@@ -475,7 +692,7 @@ export default function BuilderChat({ state, onApply }: Props) {
               <div className="mt-1.5 max-w-[85%]">
                 <button
                   onClick={() => toggleDiff(msg.id)}
-                  className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] transition-colors mb-1"
+                  className="flex items-center gap-1 text-[10px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] transition-colors mb-1"
                 >
                   <span>{msg.diff.length} change{msg.diff.length !== 1 ? "s" : ""}</span>
                   <svg
@@ -490,16 +707,22 @@ export default function BuilderChat({ state, onApply }: Props) {
                     {msg.diff.map((entry, i) => (
                       <span
                         key={i}
-                        className={`inline-flex items-center gap-0.5 text-[10px] font-medium
+                        className={`inline-flex items-center gap-1 text-[10px] font-medium
                           ${entry.type === "add"
                             ? "text-emerald-600 dark:text-emerald-500"
                             : entry.type === "remove"
                               ? "text-red-400 dark:text-red-400 line-through"
-                              : "text-gray-400 dark:text-[#7A9BBF]"
+                              : "text-[#A3A3A3] dark:text-[#7A9BBF]"
                           }`}
                       >
                         {entry.type === "add" && (
                           <span className="text-emerald-400 dark:text-emerald-600 leading-none">✓</span>
+                        )}
+                        {entry.swatch && (
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
+                            style={{ background: entry.swatch }}
+                          />
                         )}
                         {entry.label}
                       </span>
@@ -514,7 +737,7 @@ export default function BuilderChat({ state, onApply }: Props) {
         {/* Loading indicator */}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-[#111D30] border border-gray-100 dark:border-[#1E3050] rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
+            <div className="bg-white dark:bg-[#111D30] border border-[#F5F5F5] dark:border-[#1E3050] rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
@@ -532,7 +755,7 @@ export default function BuilderChat({ state, onApply }: Props) {
             {followUpQuestion && (
               <div className="flex items-start gap-2 max-w-[90%]">
                 <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-violet-500 dark:text-violet-400 text-[9px] font-bold leading-none">?</span>
-                <p className="text-sm font-medium text-gray-700 dark:text-[#C8D8EE] leading-snug">
+                <p className="text-sm font-medium text-[#404040] dark:text-[#C8D8EE] leading-snug">
                   {followUpQuestion}
                 </p>
               </div>
@@ -601,14 +824,14 @@ export default function BuilderChat({ state, onApply }: Props) {
 
           {/* Suggestions card — full width */}
           <div className="pt-2 pb-2">
-          <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-gray-100 dark:border-[#1E3050] shadow-md dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-visible">
+          <div className="suggest-card bg-white dark:bg-[#111D30] rounded-2xl border border-[#F5F5F5] dark:border-[#1E3050] shadow-md dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-visible">
 
             {/* Collapsed label-only mode */}
             {suggestionsCollapsed ? (
               <Tip label="Open suggestions">
                 <button
                   onClick={() => setSuggestionsCollapsed(false)}
-                  className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-semibold text-gray-400 dark:text-[#7A9BBF] hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors rounded-2xl"
+                  className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-semibold text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors rounded-2xl"
                 >
                   <span>CustomGPT.ai suggestions</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -620,13 +843,13 @@ export default function BuilderChat({ state, onApply }: Props) {
 
             {/* Category tabs */}
             {(
-              <div className="flex items-center border-b border-gray-100 dark:border-[#1E3050]">
+              <div className="flex items-center border-b border-[#F5F5F5] dark:border-[#1E3050]">
                 {/* Scrollable tabs — flex-1 min-w-0 overflow-hidden so it never pushes action buttons off-screen */}
                 <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden px-3 pt-2.5 pb-2">
                   {tabsCanScrollLeft && (
                     <button
                       onClick={scrollTabsLeft}
-                      className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                      className="shrink-0 p-1 rounded-md text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="15 18 9 12 15 6"/>
@@ -659,7 +882,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                         className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
                           activeTab === id
                             ? activeClass
-                            : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"
+                            : "text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050]"
                         }`}
                       >
                         {label}
@@ -669,7 +892,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                   {tabsCanScrollRight && (
                     <button
                       onClick={scrollTabsRight}
-                      className="shrink-0 p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                      className="shrink-0 p-1 rounded-md text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="9 18 15 12 9 6"/>
@@ -688,7 +911,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                           setSortMenuPos({ top: rect.top - 8, right: window.innerWidth - rect.right });
                           setSortMenuOpen((v) => !v);
                         }}
-                        className={`p-1 rounded-md transition-colors ${sortMenuOpen ? "bg-gray-100 dark:bg-[#1E3050] text-gray-700 dark:text-[#C8D8EE]" : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050]"}`}
+                        className={`p-1 rounded-md transition-colors ${sortMenuOpen ? "bg-[#F5F5F5] dark:bg-[#1E3050] text-[#404040] dark:text-[#C8D8EE]" : "text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050]"}`}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/>
@@ -699,7 +922,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                   <Tip label={chipsExpanded ? "Collapse" : "Expand"}>
                     <button
                       onClick={() => setChipsExpanded((v) => !v)}
-                      className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                      className="p-1 rounded-md text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
                     >
                       {chipsExpanded ? (
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -717,7 +940,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                   <Tip label="Minimize">
                     <button
                       onClick={() => setSuggestionsCollapsed(true)}
-                      className="p-1 rounded-md text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE] hover:bg-gray-100 dark:hover:bg-[#1E3050] transition-colors"
+                      className="p-1 rounded-md text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -739,10 +962,10 @@ export default function BuilderChat({ state, onApply }: Props) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-xs font-semibold text-gray-700 dark:text-[#C8D8EE]">Enhance your agent with actions.</p>
+                    <p className="text-xs font-semibold text-[#404040] dark:text-[#C8D8EE]">Enhance your agent with actions.</p>
                     <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800/60">Available soon</span>
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-[#7A9BBF] leading-relaxed">Add capabilities like document analysis, response verification, lead capture, webpage awareness, custom CTAs, and web search.</p>
+                  <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed">Add capabilities like document analysis, response verification, lead capture, webpage awareness, custom CTAs, and web search.</p>
                   <button className="mt-2 px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426] hover:opacity-90 transition-opacity">
                     Open Actions
                   </button>
@@ -761,9 +984,9 @@ export default function BuilderChat({ state, onApply }: Props) {
                       <div className="sticky top-0 bg-white dark:bg-[#111D30] -mx-1 px-1 -mt-3 pt-3 z-10 cursor-default pb-1">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-150 group-hover/cat:scale-125 ${cfg.dot}`} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-[#7A9BBF] group-hover/cat:text-gray-600 dark:group-hover/cat:text-[#C8D8EE] transition-colors duration-150">{cfg.label}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[#A3A3A3] dark:text-[#7A9BBF] group-hover/cat:text-[#525252] dark:group-hover/cat:text-[#C8D8EE] transition-colors duration-150">{cfg.label}</span>
                         </div>
-                        <p className="text-[10px] text-gray-400 dark:text-[#7A9BBF] leading-relaxed pl-3">{cfg.desc}</p>
+                        <p className="text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed pl-3">{cfg.desc}</p>
                       </div>
                       <div className="flex flex-wrap gap-1.5 pb-3 pl-0.5">
                         {items.map((item) => {
@@ -787,7 +1010,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                 style={{ height: "100%" }}
               >
                 {activeTab in CATEGORY_CONFIG && (
-                  <p className="shrink-0 text-[10px] text-gray-400 dark:text-[#7A9BBF] leading-relaxed mb-2">{CATEGORY_CONFIG[activeTab as SuggestionCategory].desc}</p>
+                  <p className="shrink-0 text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed mb-2">{CATEGORY_CONFIG[activeTab as SuggestionCategory].desc}</p>
                 )}
                 <div
                   className={`tabs-scroll flex-1 flex flex-wrap items-start content-start gap-1.5 pl-0.5 overflow-x-hidden overflow-y-auto`}
@@ -799,7 +1022,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                     return (
                       <button key={item} onClick={() => sendText(item)}
                         className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-all duration-150 ${
-                          cfg ? cfg.chip : "bg-white dark:bg-[#111D30] border-gray-200 dark:border-[#1E3050] text-gray-600 dark:text-[#C8D8EE] hover:border-violet-400 hover:text-violet-700 dark:hover:border-violet-600 dark:hover:text-violet-300"
+                          cfg ? cfg.chip : "bg-white dark:bg-[#111D30] border-[#E5E5E5] dark:border-[#1E3050] text-[#525252] dark:text-[#C8D8EE] hover:border-violet-400 hover:text-violet-700 dark:hover:border-violet-600 dark:hover:text-violet-300"
                         }`}>
                         {item}
                       </button>
@@ -814,10 +1037,10 @@ export default function BuilderChat({ state, onApply }: Props) {
 
             {/* Undo */}
             {canUndo && (
-              <div className="pt-1 border-t border-gray-100 dark:border-[#1E3050]">
+              <div className="pt-1 border-t border-[#F5F5F5] dark:border-[#1E3050]">
                 <button
                   onClick={handleUndo}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE] transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE] transition-colors"
                 >
                   <span>↩</span>
                   <span>Undo last change</span>
@@ -828,51 +1051,128 @@ export default function BuilderChat({ state, onApply }: Props) {
             </>)}
           </div>
           </div>
-          {/* Input + Send — flex row */}
-          <div className="py-3 flex items-center gap-2">
-            <div className="relative flex-1 min-w-0 flex items-center">
-              <textarea
-                rows={1}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = `${e.target.scrollHeight}px`;
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && !loading) {
-                    e.preventDefault();
-                    sendText(input);
-                  }
-                }}
-                placeholder=""
-                disabled={loading}
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] disabled:opacity-50 transition-all resize-none overflow-hidden leading-5"
-                id="builder-input"
-                style={{ maxHeight: "8rem" }}
-                autoFocus
-              />
-              {!input && (
-                <span
-                  className="pointer-events-none absolute left-3.5 text-sm text-gray-400 dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
-                  style={{
-                    top: "50%",
-                    opacity: phVisible ? 1 : 0,
-                    transform: `translateY(${phVisible ? "-50%" : "calc(-50% + 6px)"})`,
-                  }}
+          {/* Input area */}
+          <div className="py-3 flex flex-col gap-2">
+            {/* Attached file previews */}
+            {attachedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {attachedFiles.map((att, i) => (
+                  <div key={i} className="relative group">
+                    {att.mimeType.startsWith("image/") ? (
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-[#E5E5E5] dark:border-[#1E3050]">
+                        <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg bg-[#F5F5F5] dark:bg-[#1E3050] border border-[#E5E5E5] dark:border-[#2A4060] text-xs text-[#525252] dark:text-[#C8D8EE] font-medium max-w-[140px]">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#A3A3A3]">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span className="truncate">{att.name}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => removeAttachment(i)}
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#737373] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input row with drag-drop */}
+            <div className="relative flex items-end gap-2">
+              <div
+                className={`relative flex-1 min-w-0 flex items-end rounded-xl border bg-white dark:bg-[#162238] transition-all
+                  ${isDragging
+                    ? "border-violet-400 ring-2 ring-violet-100 dark:ring-violet-900"
+                    : "border-[#E5E5E5] dark:border-[#1E3050] focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 dark:focus-within:ring-violet-900"
+                  }`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false); }}
+                onDrop={handleDrop}
+              >
+                {/* Attach button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="shrink-0 mb-[7px] ml-2 p-1.5 rounded-lg text-[#A3A3A3] hover:text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors disabled:opacity-40"
+                  title="Attach file"
                 >
-                  {PLACEHOLDERS[phIndex]}
-                </span>
-              )}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+
+                <textarea
+                  rows={1}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !loading) {
+                      e.preventDefault();
+                      sendText(input);
+                    }
+                  }}
+                  placeholder=""
+                  disabled={loading}
+                  className="flex-1 min-w-0 px-2 py-2.5 text-sm outline-none bg-transparent text-[#262626] dark:text-[#C8D8EE] disabled:opacity-50 resize-none overflow-hidden leading-5"
+                  id="builder-input"
+                  style={{ maxHeight: "8rem" }}
+                  autoFocus
+                />
+
+                {/* Drag overlay */}
+                {isDragging && (
+                  <div className="absolute inset-0 rounded-xl bg-violet-50/90 dark:bg-violet-900/40 flex items-center justify-center pointer-events-none">
+                    <div className="flex items-center gap-2 text-sm font-medium text-violet-600 dark:text-violet-400">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                      Drop files to attach
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => sendText(input)}
+                disabled={(!input.trim() && attachedFiles.length === 0) || loading}
+                className="shrink-0 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                {loading ? "…" : "Send"}
+              </button>
             </div>
-            <button
-              onClick={() => sendText(input)}
-              disabled={!input.trim() || loading}
-              className="shrink-0 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
-            >
-              {loading ? "…" : "Send"}
-            </button>
+
+            {/* Placeholder — shown when no input */}
+            {!input && (
+              <span
+                className="pointer-events-none absolute text-sm text-[#A3A3A3] dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
+                style={{
+                  bottom: "10px",
+                  left: "calc(0.5rem + 40px)",
+                  opacity: phVisible ? 1 : 0,
+                  transform: `translateY(${phVisible ? "0" : "6px"})`,
+                }}
+              >
+                {PLACEHOLDERS[phIndex]}
+              </span>
+            )}
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.txt,.csv"
+            className="sr-only"
+            onChange={handleFileSelect}
+          />
 
         </div>{/* end flex col */}
       </div>{/* end bottom dock */}
@@ -882,7 +1182,7 @@ export default function BuilderChat({ state, onApply }: Props) {
         <div
           ref={sortDropdownRef}
           style={{ position: "fixed", top: sortMenuPos.top, right: sortMenuPos.right, transform: "translateY(-100%)", zIndex: 200 }}
-          className="bg-white dark:bg-[#111D30] border border-gray-200 dark:border-[#1E3050] rounded-xl shadow-lg py-1 min-w-[148px]"
+          className="bg-white dark:bg-[#111D30] border border-[#E5E5E5] dark:border-[#1E3050] rounded-xl shadow-lg py-1 min-w-[148px]"
         >
           {([
             { id: "popular",    label: "Most popular" },
@@ -896,7 +1196,7 @@ export default function BuilderChat({ state, onApply }: Props) {
               className={`w-full text-left px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-2
                 ${sortOrder === id
                   ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20"
-                  : "text-gray-600 dark:text-[#C8D8EE] hover:bg-gray-50 dark:hover:bg-[#1E3050]"
+                  : "text-[#525252] dark:text-[#C8D8EE] hover:bg-[#FAFAFA] dark:hover:bg-[#1E3050]"
                 }`}
             >
               {sortOrder === id ? <span className="text-[9px]">✓</span> : <span className="w-[9px]" />}

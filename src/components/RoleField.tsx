@@ -52,9 +52,9 @@ export default function RoleField({ value, onChange }: RoleFieldProps) {
           className={`w-full px-3.5 py-3 text-sm rounded-xl border transition-all resize-none outline-none
             ${focused
               ? "border-violet-400 ring-2 ring-violet-100 bg-white dark:bg-[#162238] dark:ring-violet-900"
-              : "border-gray-200 dark:border-[#1E3050] bg-white dark:bg-[#162238] hover:border-gray-300 dark:hover:border-[#1E3050]"
+              : "border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] hover:border-gray-300 dark:hover:border-[#1E3050]"
             }
-            placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF] text-gray-800 dark:text-[#C8D8EE] leading-relaxed`}
+            placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF] text-[#262626] dark:text-[#C8D8EE] leading-relaxed`}
         />
 
         {!value.trim() && !focused && (
@@ -68,8 +68,8 @@ export default function RoleField({ value, onChange }: RoleFieldProps) {
       </div>
 
       {showSuggestions && (
-        <div className="border border-gray-100 dark:border-[#1E3050] rounded-xl bg-white dark:bg-[#111D30] shadow-md overflow-hidden">
-          <p className="text-xs text-gray-500 dark:text-[#7A9BBF] px-3 pt-2.5 pb-1.5 font-medium border-b border-gray-50 dark:border-[#1E3050]">
+        <div className="border border-[#F5F5F5] dark:border-[#1E3050] rounded-xl bg-white dark:bg-[#111D30] shadow-md overflow-hidden">
+          <p className="text-xs text-[#737373] dark:text-[#7A9BBF] px-3 pt-2.5 pb-1.5 font-medium border-b border-gray-50 dark:border-[#1E3050]">
             Common use cases
           </p>
           {SUGGESTIONS.map((s) => (
@@ -79,7 +79,7 @@ export default function RoleField({ value, onChange }: RoleFieldProps) {
                 onChange(s);
                 setShowSuggestions(false);
               }}
-              className="w-full text-left px-3 py-2.5 text-sm text-gray-700 dark:text-[#C8D8EE] hover:bg-violet-50 dark:hover:bg-[#1E3050] hover:text-violet-800 dark:hover:text-[#C8D8EE] transition-colors border-b border-gray-50 dark:border-[#1E3050] last:border-0"
+              className="w-full text-left px-3 py-2.5 text-sm text-[#404040] dark:text-[#C8D8EE] hover:bg-violet-50 dark:hover:bg-[#1E3050] hover:text-violet-800 dark:hover:text-[#C8D8EE] transition-colors border-b border-gray-50 dark:border-[#1E3050] last:border-0"
             >
               {s}
             </button>

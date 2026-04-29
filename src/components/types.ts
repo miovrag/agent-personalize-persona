@@ -27,6 +27,56 @@ export interface PersonaState {
   failedModerationMessage: string;
   conversationDuration: "unlimited" | "24-hour-memory" | "24-hour-close";
   markdownInResponses: "enabled" | "disabled";
+  // Security tab
+  antiHallucination: "enabled" | "disabled";
+  agentVisibility: "private" | "public";
+  recaptcha: "enabled" | "disabled";
+  whitelistedDomains: string;
+  retentionPeriod: "custom" | "12-months" | "never";
+  retentionDays: number;
+  // Advanced tab
+  conversationHistory: "everyone" | "team-members" | "hidden";
+  titleAvatarEnabled: boolean;
+  spotlightAvatarEnabled: boolean;
+  spotlightAvatarType: "special" | "main";
+  spotlightAvatarShape: "rectangular" | "round";
+  userAvatarEnabled: boolean;
+  userAvatarUploadUrl: string;
+  avatarOrientation: "agent-left-user-right" | "agent-right-user-left" | "both-left" | "both-right";
+  titleAvatarAlignment: "left" | "center" | "right";
+  inChatAgentAvatar: boolean;
+  inChatUserAvatar: boolean;
+  affiliateId: string;
+  termsOfService: string;
+  userFeedback: "enabled" | "disabled";
+  showCopyButton: "enabled" | "disabled";
+  conversationSharing: "enabled" | "disabled";
+  conversationExporting: "enabled" | "disabled";
+  removeBranding: boolean;
+  agentTitle: string;
+  titleColor: string;
+  // Intelligence tab
+  nextGenEnabled: boolean;
+  primaryGoal: "speed" | "optimal" | "accuracy" | "understanding";
+  aiModel: string;
+  dataSource: "my-data" | "my-data-plus-llm";
+  userAwareness: boolean;
+  // Citations tab
+  enableCitations: boolean;
+  numberedCitations: boolean;
+  renderImageCitationsInline: boolean;
+  limitImageCitationHeight: boolean;
+  useOpenGraphImages: boolean;
+  maxImagesPerResponse: "1" | "2" | "3" | "unlimited";
+  classicCitations: boolean;
+  citationHeader: string;
+  citationLabel: string;
+  citationDisplayState: "opened" | "closed";
+  enablePdfViewer: boolean;
+  autoOpenPdfViewer: boolean;
+  preventPdfDownload: boolean;
+  allowKnowledgeBaseQueries: boolean;
+  enableNumericSearch: boolean;
   // General tab
   agentRole: string;
   agentAvatarUrl: string;
@@ -36,6 +86,7 @@ export interface PersonaState {
   fontFamily: "inter" | "public-sans";
   backgroundType: "image" | "color";
   backgroundColor: string;
+  backgroundImageUrl: string;
 }
 
 export const AGENT_ROLE_OPTIONS = [

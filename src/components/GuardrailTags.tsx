@@ -39,7 +39,7 @@ export default function GuardrailTags({ selected, onChange }: GuardrailTagsProps
           What should it never do?
         </label>
         {selected.length > 0 && (
-          <span className="text-xs text-gray-400 dark:text-[#7A9BBF]">{selected.length} rule{selected.length !== 1 ? "s" : ""}</span>
+          <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF]">{selected.length} rule{selected.length !== 1 ? "s" : ""}</span>
         )}
       </div>
 
@@ -54,7 +54,7 @@ export default function GuardrailTags({ selected, onChange }: GuardrailTagsProps
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
                 ${isOn
                   ? "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
-                  : "bg-white dark:bg-[#162238] text-gray-500 dark:text-[#7A9BBF] border-gray-200 dark:border-[#1E3050] hover:border-red-200 dark:hover:border-red-800 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                  : "bg-white dark:bg-[#162238] text-[#737373] dark:text-[#7A9BBF] border-[#E5E5E5] dark:border-[#1E3050] hover:border-red-200 dark:hover:border-red-800 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
                 }`}
             >
               {isOn ? "✓ " : ""}{g}
@@ -97,7 +97,7 @@ export default function GuardrailTags({ selected, onChange }: GuardrailTagsProps
             }}
             placeholder="e.g. Never recommend competitors"
             autoFocus
-            className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-gray-800 dark:text-[#C8D8EE] placeholder:text-gray-400 dark:placeholder:text-[#7A9BBF]"
+            className="flex-1 px-3 py-2 text-xs rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF]"
           />
           <button
             onClick={addCustom}
@@ -107,7 +107,7 @@ export default function GuardrailTags({ selected, onChange }: GuardrailTagsProps
           </button>
           <button
             onClick={() => setShowInput(false)}
-            className="px-3 py-2 text-xs text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE] transition-colors"
+            className="px-3 py-2 text-xs text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE] transition-colors"
           >
             Cancel
           </button>

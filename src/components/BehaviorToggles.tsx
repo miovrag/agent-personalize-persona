@@ -30,7 +30,7 @@ export default function BehaviorToggles({ selected, onChange }: Props) {
                 ${
                   isOn
                     ? "bg-violet-50 dark:bg-violet-950 border-violet-300 dark:border-violet-700 text-violet-800 dark:text-violet-300"
-                    : "bg-white dark:bg-[#162238] border-gray-200 dark:border-[#1E3050] text-gray-600 dark:text-[#7A9BBF] hover:border-violet-200 dark:hover:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950"
+                    : "bg-white dark:bg-[#162238] border-[#E5E5E5] dark:border-[#1E3050] text-[#525252] dark:text-[#7A9BBF] hover:border-violet-200 dark:hover:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950"
                 }`}
             >
               <span>{opt.label}</span>
