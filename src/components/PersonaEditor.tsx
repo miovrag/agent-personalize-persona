@@ -9,6 +9,8 @@ import PresetManager from "./PresetManager";
 import CustomGPTWidget from "./CustomGPTWidget";
 import BuilderChat from "./BuilderChat";
 import ThemeToggle from "./ThemeToggle";
+import GeneralSettings from "./GeneralSettings";
+import ConversationSettings from "./ConversationSettings";
 
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
@@ -23,6 +25,29 @@ const DEFAULT_STATE: PersonaState = {
   outputStyle: "",
   additionalInstructions: "",
   outcomes: [],
+  iDontKnowMessage: "",
+  starterQuestions: [],
+  useContextRichStarters: false,
+  starterQuestionsHeader: "",
+  starterQuestionsExpand: "",
+  starterQuestionsCollapse: "",
+  agentLanguage: "English",
+  placeholderPrompt: "",
+  loadingIndicator: "typing-dots",
+  loadingCustomMessage: "",
+  customMessageEnding: "",
+  errorMessage: "",
+  failedModerationMessage: "",
+  conversationDuration: "24-hour-memory",
+  markdownInResponses: "enabled",
+  agentRole: "",
+  agentAvatarUrl: "",
+  agentColorScheme: "adaptive",
+  agentColor: "#7c3aed",
+  agentStyle: "soft",
+  fontFamily: "inter",
+  backgroundType: "color",
+  backgroundColor: "#7c3aed",
 };
 
 type SaveState = "idle" | "saving" | "saved";
@@ -48,7 +73,8 @@ export default function PersonaEditor({
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [publishConfirm, setPublishConfirm] = useState(false);
   const lastInstructionRef = useRef<{ instruction: string; questions: string[] } | null>(null);
-  const [chatMode, setChatMode] = useState<"user" | "builder">("builder");
+  const [chatMode, setChatMode] = useState<"builder" | "settings">("builder");
+  const [settingsTab, setSettingsTab] = useState<"general" | "persona" | "conversation" | "citations" | "intelligence" | "advanced" | "security">("general");
   const [mobileView, setMobileView] = useState<"settings" | "preview">("settings");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -205,22 +231,6 @@ export default function PersonaEditor({
         </div>
       </div>
 
-      {/* Tab bar — always visible */}
-      <div className="flex gap-0 shrink-0 border-b border-gray-200 dark:border-[#1E3050] px-6 overflow-x-auto">
-        {["General", "Persona", "Conversation", "Citations", "Intelligence", "Advanced", "Security"].map((tab) => (
-          <button
-            key={tab}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
-              ${tab === "Persona"
-                ? "border-violet-600 text-violet-700"
-                : "border-transparent text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE]"
-              }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
       {/* Mobile Settings / Preview switcher */}
       <div className="xl:hidden flex shrink-0 border-b border-gray-200 dark:border-[#1E3050]">
         {(["settings", "preview"] as const).map((view) => (
@@ -247,8 +257,27 @@ export default function PersonaEditor({
 
           {/* Mode toggle — centered below tab bar */}
           <div className="shrink-0 flex justify-center px-6 py-3">
-            <ModeToggle chatMode={chatMode} onChange={setChatMode} />
+            <ModeToggle chatMode={chatMode} onChange={(m) => { setChatMode(m); if (m === "settings") setSettingsTab("general"); }} />
           </div>
+
+          {/* Settings sub-tabs — shown when in settings mode */}
+          {chatMode === "settings" && (
+            <div className="shrink-0 flex border-b border-gray-200 dark:border-[#1E3050]">
+              {(["general","persona","conversation","citations","intelligence","advanced","security"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setSettingsTab(tab)}
+                  className={`flex-1 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
+                    ${settingsTab === tab
+                      ? "border-violet-600 text-violet-700 dark:text-violet-400"
+                      : "border-transparent text-gray-500 dark:text-[#7A9BBF] hover:text-gray-700 dark:hover:text-[#C8D8EE]"
+                    }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Instructions — always mounted, hidden when not active */}
           <div className={`flex-1 flex-col overflow-hidden ${chatMode === "builder" ? "flex" : "hidden"}`}>
@@ -258,8 +287,21 @@ export default function PersonaEditor({
           </div>
 
           {/* Settings — always mounted, hidden when not active */}
-          <div className={`flex-1 overflow-y-auto ${chatMode === "user" ? "block" : "hidden"}`}>
+          <div className={`flex-1 overflow-y-auto ${chatMode === "settings" ? "block" : "hidden"}`}>
             <div className="w-full max-w-[640px] mx-auto">
+
+              {/* General tab */}
+              {settingsTab === "general" && (
+                <GeneralSettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
+              {/* Conversation tab */}
+              {settingsTab === "conversation" && (
+                <ConversationSettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
+              {/* Persona tab (existing settings content) */}
+              {settingsTab === "persona" && (<>
               <div className="px-6 pt-6 pb-4">
                 <CompletionScore score={score} />
               </div>
@@ -307,6 +349,7 @@ export default function PersonaEditor({
                 </button>
               </div>
             </div>
+            </>)}
             </div>
             </div>
           </div>
@@ -328,22 +371,22 @@ function ModeToggle({
   chatMode,
   onChange,
 }: {
-  chatMode: "user" | "builder";
-  onChange: (mode: "user" | "builder") => void;
+  chatMode: "builder" | "settings";
+  onChange: (mode: "builder" | "settings") => void;
 }) {
   return (
     <div className="flex items-center bg-gray-100 dark:bg-[#162238] rounded-lg p-0.5 shrink-0">
-      {(["builder", "user"] as const).map((mode) => (
+      {(["builder", "settings"] as const).map((mode) => (
         <button
           key={mode}
           onClick={() => onChange(mode)}
-          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all
             ${chatMode === mode
               ? "bg-white dark:bg-[#111D30] text-gray-800 dark:text-[#C8D8EE] shadow-sm"
               : "text-gray-400 dark:text-[#7A9BBF] hover:text-gray-600 dark:hover:text-[#C8D8EE]"
             }`}
         >
-          {mode === "user" ? "Settings" : "Instructions"}
+          {mode === "builder" ? "Instructions" : "Settings"}
         </button>
       ))}
     </div>

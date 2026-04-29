@@ -11,7 +11,43 @@ export interface PersonaState {
   outputStyle: string;
   additionalInstructions: string;
   outcomes: string[];
+  // Conversation tab
+  iDontKnowMessage: string;
+  starterQuestions: string[];
+  useContextRichStarters: boolean;
+  starterQuestionsHeader: string;
+  starterQuestionsExpand: string;
+  starterQuestionsCollapse: string;
+  agentLanguage: string;
+  placeholderPrompt: string;
+  loadingIndicator: "typing-dots" | "custom-message";
+  loadingCustomMessage: string;
+  customMessageEnding: string;
+  errorMessage: string;
+  failedModerationMessage: string;
+  conversationDuration: "unlimited" | "24-hour-memory" | "24-hour-close";
+  markdownInResponses: "enabled" | "disabled";
+  // General tab
+  agentRole: string;
+  agentAvatarUrl: string;
+  agentColorScheme: "adaptive" | "legacy";
+  agentColor: string;
+  agentStyle: "sharp" | "soft" | "round";
+  fontFamily: "inter" | "public-sans";
+  backgroundType: "image" | "color";
+  backgroundColor: string;
 }
+
+export const AGENT_ROLE_OPTIONS = [
+  "Enterprise Search",
+  "Customer Support",
+  "Sales Assistant",
+  "HR Assistant",
+  "Knowledge Base",
+  "Product Guide",
+  "Legal Assistant",
+  "IT Helpdesk",
+];
 
 export const STYLE_OPTIONS = [
   "Direct",
