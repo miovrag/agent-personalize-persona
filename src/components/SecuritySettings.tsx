@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { PersonaState } from "./types";
 
 const SettingsIcon = () => (
@@ -9,12 +10,31 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] shrink-0">
-    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-    <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
+const InfoIcon = ({ tooltip }: { tooltip?: string } = {}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] cursor-default">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-none" style={{ transform: "translateX(-50%)" }}>
+          <div
+            className="bg-[#171717] text-white text-[11px] leading-snug rounded-[6px] px-2.5 py-1.5 whitespace-nowrap shadow-lg transition-[opacity,transform] duration-[120ms]"
+            style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(4px)" }}
+          >
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function RadioGroup<T extends string>({
   options,
@@ -66,12 +86,12 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionHeader({ label, info }: { label: string; info?: boolean }) {
+function SectionHeader({ label, info, tooltip }: { label: string; info?: boolean; tooltip?: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
       <SettingsIcon />
       <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">{label}</span>
-      {info && <InfoIcon />}
+      {info && <InfoIcon tooltip={tooltip} />}
     </div>
   );
 }
@@ -103,7 +123,7 @@ export default function SecuritySettings({
 
       {/* Agent Visibility */}
       <SectionCard>
-        <SectionHeader label="Agent Visibility" info />
+        <SectionHeader label="Agent Visibility" info tooltip="Public agents can be embedded anywhere; private requires login" />
         <RadioGroup
           options={[
             { value: "private", label: "Private" },
@@ -129,7 +149,7 @@ export default function SecuritySettings({
 
       {/* Recaptcha */}
       <SectionCard>
-        <SectionHeader label="Recaptcha" info />
+        <SectionHeader label="Recaptcha" info tooltip="Adds a CAPTCHA challenge to block automated abuse" />
         <RadioGroup
           options={[
             { value: "enabled", label: "Enabled" },
@@ -142,7 +162,7 @@ export default function SecuritySettings({
 
       {/* Whitelisted Domains */}
       <SectionCard>
-        <SectionHeader label="Whitelisted Domains" info />
+        <SectionHeader label="Whitelisted Domains" info tooltip="Restrict embedding to these domains — leave empty to allow all" />
         <textarea
           value={state.whitelistedDomains}
           onChange={(e) => onChange({ whitelistedDomains: e.target.value })}
@@ -155,7 +175,7 @@ export default function SecuritySettings({
 
       {/* Conversation Retention Period */}
       <SectionCard>
-        <SectionHeader label="Conversation Retention Period" info />
+        <SectionHeader label="Conversation Retention Period" info tooltip="How long conversation data is stored before automatic deletion" />
         <div className="flex flex-col gap-2.5">
           {/* Custom */}
           <label className="flex items-center gap-2.5 cursor-pointer group">

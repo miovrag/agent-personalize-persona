@@ -37,6 +37,13 @@ const DEFAULT_STATE: PersonaState = {
   agentLanguage: "English",
   placeholderPrompt: "",
   loadingIndicator: "typing-dots",
+  backgroundActivityMessages: [
+    "Searching knowledge base...",
+    "Analyzing your question...",
+    "Reviewing relevant sources...",
+    "Processing request...",
+    "Preparing your answer...",
+  ],
   loadingCustomMessage: "",
   customMessageEnding: "",
   errorMessage: "",
@@ -418,6 +425,16 @@ export default function PersonaEditor({
               backgroundImageUrl={state.backgroundImageUrl}
               typingIndicatorStyle={state.typingIndicatorStyle}
               onTypingIndicatorChange={(v) => updateState({ typingIndicatorStyle: v })}
+              starterQuestions={state.starterQuestions}
+              starterQuestionsHeader={state.starterQuestionsHeader}
+              starterQuestionsExpand={state.starterQuestionsExpand}
+              starterQuestionsCollapse={state.starterQuestionsCollapse}
+              loadingIndicator={state.loadingIndicator}
+              backgroundActivityMessages={state.backgroundActivityMessages}
+              onBackgroundActivityMessagesChange={(msgs) => updateState({ backgroundActivityMessages: msgs })}
+              loadingCustomMessage={state.loadingCustomMessage}
+              outputStyle={state.outputStyle}
+              markdownInResponses={state.markdownInResponses}
             />
           </div>
         </div>

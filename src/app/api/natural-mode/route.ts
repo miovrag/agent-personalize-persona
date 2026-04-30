@@ -30,6 +30,12 @@ The user's current agent configuration (PersonaState) is provided in each messag
 - outputStyle: string — one of: "bullets", "short-steps", "detailed", "step-guide", "summary", or "" (none)
 - additionalInstructions: string — free-form instructions
 
+### Conversation / UX fields:
+- loadingIndicator: "typing-dots" | "custom-message" | "background-activity"
+  - "typing-dots" = animated three-dot indicator
+  - "background-activity" = cycling messages showing what the agent is doing
+  - "custom-message" = a static custom text while loading
+
 ### Visual style fields:
 - agentStyle: "sharp" | "soft" | "round" — corner radius of chat bubbles, inputs, and buttons
 - agentColor: string — hex color for the agent's primary color (header, send button, user bubbles). Must be a valid 6-digit hex like "#7367F0"
@@ -65,8 +71,19 @@ The user's current agent configuration (PersonaState) is provided in each messag
   "reply": "Conversational confirmation of what changed, 1-2 sentences max.",
   "patch": { ...only the fields that should change, or null if nothing changed },
   "followUp": "A single smart follow-up question or suggestion, or null",
-  "nextSuggestions": ["short label 1", "short label 2", "short label 3"]
+  "nextSuggestions": ["short label 1", "short label 2", "short label 3"],
+  "widget": null
 }
+
+When the user asks to change a setting that has discrete enumerable options and they haven't specified which option (e.g. "change the font", "change the style"), emit a widget instead of asking in plain text:
+- Set patch to null
+- Set reply to a brief intro like "Choose a font:" or "Pick a corner style:"
+- Set widget to: { "type": "options", "options": [{ "label": "...", "icon": "...", "description": "...", "message": "exact text to send when chosen" }] }
+- List ALL valid options for that setting with their icons and a short description
+- For fontFamily options: icon "Aa" for all, describe each briefly
+- For agentStyle options: icon "▪" for sharp, "▫" for soft, "◯" for round
+- NEVER emit a widget for loadingIndicator — loading indicator queries are handled by the UI directly
+- Otherwise set widget to null
 
 ## Rules:
 - Only include fields in patch that actually change. Don't repeat unchanged values.

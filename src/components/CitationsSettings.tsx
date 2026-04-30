@@ -1,13 +1,33 @@
 "use client";
 
+import { useState } from "react";
 import type { PersonaState } from "./types";
 
-const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] shrink-0">
-    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-    <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
+const InfoIcon = ({ tooltip }: { tooltip?: string } = {}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] cursor-default">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-none" style={{ transform: "translateX(-50%)" }}>
+          <div
+            className="bg-[#171717] text-white text-[11px] leading-snug rounded-[6px] px-2.5 py-1.5 whitespace-nowrap shadow-lg transition-[opacity,transform] duration-[120ms]"
+            style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(4px)" }}
+          >
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -42,11 +62,11 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionTitle({ children, info }: { children: React.ReactNode; info?: boolean }) {
+function SectionTitle({ children, info, tooltip }: { children: React.ReactNode; info?: boolean; tooltip?: string }) {
   return (
     <div className="flex items-center gap-2 mb-1">
       <span className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">{children}</span>
-      {info && <InfoIcon />}
+      {info && <InfoIcon tooltip={tooltip} />}
     </div>
   );
 }
@@ -61,6 +81,7 @@ function ToggleRow({
   onChange,
   disabled,
   info,
+  tooltip,
   indent,
 }: {
   label: string;
@@ -68,13 +89,14 @@ function ToggleRow({
   onChange: (v: boolean) => void;
   disabled?: boolean;
   info?: boolean;
+  tooltip?: string;
   indent?: boolean;
 }) {
   return (
     <div className={`flex items-center justify-between gap-3 ${indent ? "pl-6" : ""}`}>
       <div className="flex items-center gap-1.5 min-w-0">
         <span className={`text-sm ${disabled ? "text-[#A3A3A3] dark:text-[#7A9BBF]" : "text-[#404040] dark:text-[#C8D8EE]"}`}>{label}</span>
-        {info && <InfoIcon />}
+        {info && <InfoIcon tooltip={tooltip} />}
       </div>
       <Toggle checked={checked} onChange={onChange} disabled={disabled} />
     </div>
@@ -103,7 +125,7 @@ export default function CitationsSettings({
 
       {/* Citation Settings */}
       <SectionCard>
-        <SectionTitle info>Citation Settings</SectionTitle>
+        <SectionTitle info tooltip="Configure how your agent references and displays source information">Citation Settings</SectionTitle>
         <SectionDesc>Control how your agent references and displays source information in its responses.</SectionDesc>
         <ToggleRow
           label="Enable Citations"
@@ -118,7 +140,7 @@ export default function CitationsSettings({
 
       {/* Citation Types */}
       <SectionCard>
-        <SectionTitle info>Citation Types</SectionTitle>
+        <SectionTitle info tooltip="Choose between numbered inline or classic footnote-style citations">Citation Types</SectionTitle>
         <SectionDesc>Select which citation formats to use.</SectionDesc>
 
         {/* Numbered references */}
@@ -237,7 +259,7 @@ export default function CitationsSettings({
 
       {/* PDF Citations */}
       <SectionCard>
-        <SectionTitle info>PDF Citations</SectionTitle>
+        <SectionTitle info tooltip="Control how PDF source documents are previewed and accessed">PDF Citations</SectionTitle>
         <div className="space-y-4 mt-1">
           <ToggleRow
             label="Enable PDF Viewer"
@@ -270,7 +292,7 @@ export default function CitationsSettings({
           <div>
             <div className="flex items-center gap-1.5 mb-2">
               <p className="text-xs font-semibold text-[#737373] dark:text-[#7A9BBF] uppercase tracking-wide">Knowledge base awareness</p>
-              <InfoIcon />
+              <InfoIcon tooltip="Enables the agent to search your uploaded documents" />
             </div>
             <ToggleRow
               label="Allow knowledge base queries"
@@ -286,7 +308,7 @@ export default function CitationsSettings({
           <div>
             <div className="flex items-center gap-1.5 mb-2">
               <p className="text-xs font-semibold text-[#737373] dark:text-[#7A9BBF] uppercase tracking-wide">Numeric search optimization</p>
-              <InfoIcon />
+              <InfoIcon tooltip="Allows finding content by document page or section number" />
             </div>
             <ToggleRow
               label="Enable numeric search"

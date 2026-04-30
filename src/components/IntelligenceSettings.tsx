@@ -3,12 +3,31 @@
 import { useState, useRef, useEffect } from "react";
 import type { PersonaState } from "./types";
 
-const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] shrink-0">
-    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-    <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
+const InfoIcon = ({ tooltip }: { tooltip?: string } = {}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] cursor-default">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-none" style={{ transform: "translateX(-50%)" }}>
+          <div
+            className="bg-[#171717] text-white text-[11px] leading-snug rounded-[6px] px-2.5 py-1.5 whitespace-nowrap shadow-lg transition-[opacity,transform] duration-[120ms]"
+            style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(4px)" }}
+          >
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -343,7 +362,7 @@ export default function IntelligenceSettings({
       <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden p-5">
         <div className="flex items-center gap-2 mb-0.5">
           <h3 className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">Data Source Control</h3>
-          <InfoIcon />
+          <InfoIcon tooltip="Restrict answers to your documents or allow broader LLM knowledge" />
         </div>
         <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mb-4">Choose which sources your agent can use to build responses</p>
         <div className="space-y-3 mb-4">
@@ -391,7 +410,7 @@ export default function IntelligenceSettings({
       <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden p-5">
         <div className="flex items-center gap-2 mb-0.5">
           <h3 className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">User Awareness</h3>
-          <InfoIcon />
+          <InfoIcon tooltip="Agent personalizes responses based on the logged-in user's identity" />
         </div>
         <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mb-4">If enabled, the agent will be aware of the logged-in user&apos;s identity</p>
         <div className="flex items-center justify-between gap-3">

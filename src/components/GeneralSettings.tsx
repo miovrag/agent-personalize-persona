@@ -23,12 +23,31 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF]">
-    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-    <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
+const InfoIcon = ({ tooltip }: { tooltip?: string } = {}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] cursor-default">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-none" style={{ transform: "translateX(-50%)" }}>
+          <div
+            className="bg-[#171717] text-white text-[11px] leading-snug rounded-[6px] px-2.5 py-1.5 whitespace-nowrap shadow-lg transition-[opacity,transform] duration-[120ms]"
+            style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(4px)" }}
+          >
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function RadioGroup<T extends string>({
   options,
@@ -521,11 +540,13 @@ function AvatarPickerModal({
 function Section({
   label,
   info,
+  tooltip,
   extra,
   children,
 }: {
   label: string;
   info?: boolean;
+  tooltip?: string;
   extra?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -534,7 +555,7 @@ function Section({
       <div className="flex items-center gap-2 mb-3">
         <SettingsIcon />
         <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">{label}</span>
-        {info && <InfoIcon />}
+        {info && <InfoIcon tooltip={tooltip} />}
         {extra && <div className="ml-auto">{extra}</div>}
       </div>
       {children}
@@ -694,7 +715,12 @@ function FontSelect({ value, onChange }: { value: string; onChange: (v: string) 
   function openDrop() {
     if (!triggerRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
-    setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    const dropHeight = FONT_OPTIONS.length * 44; // approx height
+    const spaceBelow = window.innerHeight - r.bottom;
+    const top = spaceBelow >= dropHeight + 8
+      ? r.bottom + 4
+      : r.top - dropHeight - 4;
+    setDropPos({ top, left: r.left, width: r.width });
     setOpen(true);
   }
 
@@ -752,6 +778,113 @@ function FontSelect({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
+type SectionProps = { state: PersonaState; onChange: (p: Partial<PersonaState>) => void };
+
+export function AgentStyleSection({ state, onChange }: SectionProps) {
+  return (
+    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden px-5 py-4">
+      <div className="flex items-center gap-2 mb-3">
+        <SettingsIcon />
+        <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Style</span>
+        <InfoIcon tooltip="Controls the border radius of bubbles, buttons, and inputs" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {(["sharp", "soft", "round"] as const).map((style) => {
+          const active = state.agentStyle === style;
+          const label = style.charAt(0).toUpperCase() + style.slice(1);
+          const btnR = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-lg" : "rounded-full";
+          const cardR = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-xl" : "rounded-2xl";
+          const bubbleR = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-xl" : "rounded-full";
+          const desc = style === "sharp" ? "Flat, geometric edges" : style === "soft" ? "Balanced, modern feel" : "Pill-shaped, friendly";
+          return (
+            <button key={style} onClick={() => onChange({ agentStyle: style })}
+              className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all duration-150 cursor-pointer
+                ${active ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] hover:border-violet-300 dark:hover:border-violet-700"}`}>
+              <div className="w-full flex flex-col gap-1 px-0.5">
+                <div className={`self-end h-3 bg-violet-400/70 dark:bg-violet-500/50 ${bubbleR}`} style={{ width: "65%" }} />
+                <div className={`self-start h-3 bg-[#E5E5E5] dark:bg-[#1E3050] ${bubbleR}`} style={{ width: "50%" }} />
+                <div className={`mt-0.5 h-4 w-full bg-[#F5F5F5] dark:bg-[#111D30] border border-[#E5E5E5] dark:border-[#1E3050] flex items-center justify-end pr-0.5 ${cardR}`}>
+                  <div className={`w-3 h-3 bg-violet-500/70 flex items-center justify-center shrink-0 ${btnR}`}>
+                    <svg width="6" height="6" viewBox="0 0 10 10" fill="white"><path d="M1 9L9 5 1 1v3l5 1-5 1v3z"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-0 text-center">
+                <span className={`text-[11px] font-medium transition-colors ${active ? "text-violet-600 dark:text-violet-400" : "text-[#404040] dark:text-[#C8D8EE]"}`}>{label}</span>
+                <span className="text-[9px] text-[#A3A3A3] dark:text-[#5A7A9A] leading-tight">{desc}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function FontFamilySection({ state, onChange }: SectionProps) {
+  return (
+    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden px-5 py-4">
+      <div className="flex items-center gap-2 mb-3">
+        <SettingsIcon />
+        <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Font Family</span>
+      </div>
+      <FontSelect value={state.fontFamily} onChange={(v) => onChange({ fontFamily: v as PersonaState["fontFamily"] })} />
+    </div>
+  );
+}
+
+export function AgentColorSection({ state, onChange }: SectionProps) {
+  return (
+    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] divide-y divide-[#E5E5E5] dark:divide-[#1E3050] overflow-hidden">
+      <div className="px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <SettingsIcon />
+          <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Color Scheme</span>
+          <InfoIcon tooltip="Adaptive follows your brand color; Legacy uses the classic theme" />
+        </div>
+        <RadioGroup
+          options={[{ value: "adaptive", label: "Adaptive" }, { value: "legacy", label: "Legacy" }]}
+          value={state.agentColorScheme}
+          onChange={(v) => onChange({ agentColorScheme: v })}
+        />
+      </div>
+      <div className="px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <SettingsIcon />
+          <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Primary Color</span>
+        </div>
+        <ColorInput value={state.agentColor} onChange={(v) => onChange({ agentColor: v })} />
+      </div>
+    </div>
+  );
+}
+
+export function BackgroundSection({ state, onChange }: SectionProps) {
+  return (
+    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden px-5 py-4">
+      <div className="flex items-center gap-2 mb-3">
+        <SettingsIcon />
+        <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Background</span>
+      </div>
+      <div className="inline-flex items-center bg-[#F5F5F5] dark:bg-[#162238] rounded-lg p-0.5 mb-3">
+        {(["image", "color"] as const).map((type) => (
+          <button key={type} onClick={() => onChange({ backgroundType: type })}
+            className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all duration-150 whitespace-nowrap
+              ${state.backgroundType === type ? "bg-white dark:bg-[#1E3050] text-[#262626] dark:text-[#C8D8EE] font-semibold shadow-sm" : "text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"}`}>
+            {type === "image" ? "Background Image" : "Background Color"}
+          </button>
+        ))}
+      </div>
+      {state.backgroundType === "color" && (
+        <ColorInput value={state.backgroundColor} onChange={(v) => onChange({ backgroundColor: v })} />
+      )}
+      {state.backgroundType === "image" && (
+        <BgImagePicker value={state.backgroundImageUrl} onChange={(v) => onChange({ backgroundImageUrl: v })} />
+      )}
+    </div>
+  );
+}
+
 export default function GeneralSettings({
   state,
   onChange,
@@ -800,7 +933,7 @@ export default function GeneralSettings({
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Role</span>
-              <InfoIcon />
+              <InfoIcon tooltip="The primary function of your agent — shapes behavior and default responses" />
               <a href="#" className="ml-auto text-xs text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1">
                 Learn more
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3.5 8.5l5-5M5 3.5h3.5V7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -833,7 +966,7 @@ export default function GeneralSettings({
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Avatar</span>
-              <InfoIcon />
+              <InfoIcon tooltip="Displayed in the chat header and conversation bubbles" />
             </div>
             <div className="flex items-center gap-4">
               <button
@@ -884,7 +1017,7 @@ export default function GeneralSettings({
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Color Scheme</span>
-              <InfoIcon />
+              <InfoIcon tooltip="Adaptive follows your brand color; Legacy uses the classic theme" />
             </div>
             <RadioGroup
               options={[
@@ -950,7 +1083,7 @@ export default function GeneralSettings({
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Style</span>
-              <InfoIcon />
+              <InfoIcon tooltip="Controls the border radius of bubbles, buttons, and inputs" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               {(["sharp", "soft", "round"] as const).map((style) => {

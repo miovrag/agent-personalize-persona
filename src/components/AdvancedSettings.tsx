@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { PersonaState } from "./types";
 
 const SettingsIcon = () => (
@@ -10,12 +10,31 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] shrink-0">
-    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-    <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
+const InfoIcon = ({ tooltip }: { tooltip?: string } = {}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] cursor-default">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-none" style={{ transform: "translateX(-50%)" }}>
+          <div
+            className="bg-[#171717] text-white text-[11px] leading-snug rounded-[6px] px-2.5 py-1.5 whitespace-nowrap shadow-lg transition-[opacity,transform] duration-[120ms]"
+            style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(4px)" }}
+          >
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -75,12 +94,12 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionHeader({ label, info }: { label: string; info?: boolean }) {
+function SectionHeader({ label, info, tooltip }: { label: string; info?: boolean; tooltip?: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
       <SettingsIcon />
       <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">{label}</span>
-      {info && <InfoIcon />}
+      {info && <InfoIcon tooltip={tooltip} />}
     </div>
   );
 }
@@ -108,7 +127,7 @@ export default function AdvancedSettings({
 
       {/* End-user conversation history */}
       <SectionCard>
-        <SectionHeader label="End-user conversation history" info />
+        <SectionHeader label="End-user conversation history" info tooltip="Controls who can view past conversations in your dashboard" />
         <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed mb-4">
           When enabled, users will see a history panel with their past conversations and can resume any of them. Works across Share Link, Embed, Live Chat, and Website Copilot deployments.
         </p>
@@ -157,7 +176,7 @@ export default function AdvancedSettings({
 
       {/* User Feedback */}
       <SectionCard>
-        <SectionHeader label="User Feedback" info />
+        <SectionHeader label="User Feedback" info tooltip="Adds thumbs up/down buttons to each agent response" />
         <RadioGroup
           options={[{ value: "enabled", label: "Enabled" }, { value: "disabled", label: "Disabled" }]}
           value={state.userFeedback}
@@ -167,7 +186,7 @@ export default function AdvancedSettings({
 
       {/* Show Copy Button */}
       <SectionCard>
-        <SectionHeader label="Show Copy Button" info />
+        <SectionHeader label="Show Copy Button" info tooltip="Displays a copy-to-clipboard button on agent responses" />
         <RadioGroup
           options={[{ value: "enabled", label: "Enabled" }, { value: "disabled", label: "Disabled" }]}
           value={state.showCopyButton}
@@ -177,7 +196,7 @@ export default function AdvancedSettings({
 
       {/* Conversation Sharing */}
       <SectionCard>
-        <SectionHeader label="Conversation Sharing" info />
+        <SectionHeader label="Conversation Sharing" info tooltip="Lets users generate a shareable link to their conversation" />
         <RadioGroup
           options={[{ value: "enabled", label: "Enabled" }, { value: "disabled", label: "Disabled" }]}
           value={state.conversationSharing}
@@ -187,7 +206,7 @@ export default function AdvancedSettings({
 
       {/* Conversation Exporting */}
       <SectionCard>
-        <SectionHeader label="Conversation Exporting" info />
+        <SectionHeader label="Conversation Exporting" info tooltip="Lets users download their conversation as a text file" />
         <RadioGroup
           options={[{ value: "enabled", label: "Enabled" }, { value: "disabled", label: "Disabled" }]}
           value={state.conversationExporting}
@@ -202,7 +221,7 @@ export default function AdvancedSettings({
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-sm text-[#404040] dark:text-[#C8D8EE]">Remove Branding</span>
-              <InfoIcon />
+              <InfoIcon tooltip="Removes the 'Powered by CustomGPT.ai' badge from the chat" />
             </div>
             <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF]">Powered by CustomGPT.ai</p>
           </div>
@@ -215,7 +234,7 @@ export default function AdvancedSettings({
 
       {/* Agent Title */}
       <SectionCard>
-        <SectionHeader label="Agent Title" info />
+        <SectionHeader label="Agent Title" info tooltip="Custom heading displayed in the chat — defaults to agent name" />
         <input
           type="text"
           value={state.agentTitle}
@@ -227,7 +246,7 @@ export default function AdvancedSettings({
 
       {/* Title Color */}
       <SectionCard>
-        <SectionHeader label="Title Color" info />
+        <SectionHeader label="Title Color" info tooltip="Color applied to the agent title text in the header" />
         <div className="flex items-center gap-2">
           <div className="relative flex items-center flex-1 max-w-[220px] border border-[#E5E5E5] dark:border-[#1E3050] rounded-lg overflow-hidden bg-white dark:bg-[#162238]">
             <input
@@ -267,7 +286,7 @@ export default function AdvancedSettings({
 
       {/* Spotlight Avatar */}
       <SectionCard>
-        <SectionHeader label="Spotlight Avatar" info />
+        <SectionHeader label="Spotlight Avatar" info tooltip="Large avatar shown on the chat welcome screen" />
         <div className="flex items-center justify-between gap-3 mb-4">
           <span className="text-sm text-[#404040] dark:text-[#C8D8EE]">Enabled</span>
           <div className="flex items-center gap-2">
@@ -299,7 +318,7 @@ export default function AdvancedSettings({
 
       {/* User Avatar */}
       <SectionCard>
-        <SectionHeader label="User Avatar" info />
+        <SectionHeader label="User Avatar" info tooltip="Avatar displayed next to user messages in the conversation" />
         <div className="flex items-center justify-between gap-3 mb-4">
           <span className="text-sm text-[#404040] dark:text-[#C8D8EE]">Enabled</span>
           <div className="flex items-center gap-2">
@@ -336,7 +355,7 @@ export default function AdvancedSettings({
 
       {/* Avatar Orientations */}
       <SectionCard>
-        <SectionHeader label="Avatar Orientations" info />
+        <SectionHeader label="Avatar Orientations" info tooltip="Controls which side the agent and user avatars appear on" />
         <div className="relative">
           <select
             value={state.avatarOrientation}
@@ -356,7 +375,7 @@ export default function AdvancedSettings({
 
       {/* Agent Title & Avatar Alignment */}
       <SectionCard>
-        <SectionHeader label="Agent Title & Avatar Alignment" info />
+        <SectionHeader label="Agent Title & Avatar Alignment" info tooltip="Horizontal position of title and avatar in the chat header" />
         <div className="relative">
           <select
             value={state.titleAvatarAlignment}
@@ -375,7 +394,7 @@ export default function AdvancedSettings({
 
       {/* In-Chat Avatars */}
       <SectionCard>
-        <SectionHeader label="In-Chat Avatars" info />
+        <SectionHeader label="In-Chat Avatars" info tooltip="Show or hide avatars next to messages in the conversation" />
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-[#404040] dark:text-[#C8D8EE]">Agent Avatar</span>
@@ -396,7 +415,7 @@ export default function AdvancedSettings({
 
       {/* Affiliate ID */}
       <SectionCard>
-        <SectionHeader label="Affiliate ID" info />
+        <SectionHeader label="Affiliate ID" info tooltip="Your affiliate tracking ID for referral attribution" />
         <input
           type="text"
           value={state.affiliateId}

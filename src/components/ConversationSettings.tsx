@@ -106,21 +106,42 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] shrink-0">
-    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-    <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
+const InfoIcon = ({ tooltip }: { tooltip?: string } = {}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-[#A3A3A3] dark:text-[#7A9BBF] cursor-default">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 6v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-none" style={{ transform: "translateX(-50%)" }}>
+          <div
+            className="bg-[#171717] text-white text-[11px] leading-snug rounded-[6px] px-2.5 py-1.5 whitespace-nowrap shadow-lg transition-[opacity,transform] duration-[120ms]"
+            style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(4px)" }}
+          >
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function Section({
   label,
   info,
+  tooltip,
   description,
   children,
 }: {
   label: string;
   info?: boolean;
+  tooltip?: string;
   description?: string;
   children: React.ReactNode;
 }) {
@@ -129,7 +150,7 @@ function Section({
       <div className="flex items-center gap-2 mb-3">
         <SettingsIcon />
         <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">{label}</span>
-        {info && <InfoIcon />}
+        {info && <InfoIcon tooltip={tooltip} />}
       </div>
       {description && (
         <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mb-3">{description}</p>
@@ -221,6 +242,82 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function RadioDot({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer
+        ${active ? "border-violet-600 bg-white dark:bg-[#111D30]" : "border-gray-300 dark:border-[#2A4060] bg-white dark:bg-[#111D30]"}`}
+    >
+      {active && <div className="w-2 h-2 rounded-full bg-violet-600" />}
+    </div>
+  );
+}
+
+export function LoadingIndicatorSection({
+  state,
+  onChange,
+}: {
+  state: PersonaState;
+  onChange: (patch: Partial<PersonaState>) => void;
+}) {
+
+  return (
+    <Section label="Loading Indicator" info tooltip="Animation or message shown while the agent generates a response">
+      <div className="flex flex-col gap-3">
+
+        {/* Option 1 — Typing dots */}
+        <div
+          className="flex items-center gap-2.5 cursor-pointer"
+          onClick={() => onChange({ loadingIndicator: "typing-dots" })}
+        >
+          <RadioDot active={state.loadingIndicator === "typing-dots"} onClick={() => onChange({ loadingIndicator: "typing-dots" })} />
+          <span className={`text-sm transition-colors ${state.loadingIndicator === "typing-dots" ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF]"}`}>
+            Typing dots
+          </span>
+          <div className="flex items-center gap-1 ml-1">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" style={{ animation: `bounce 1.2s ${i * 0.2}s infinite` }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Option 2 — Background activity */}
+        <div
+          className="flex items-center gap-2.5 cursor-pointer"
+          onClick={() => onChange({ loadingIndicator: "background-activity" })}
+        >
+          <RadioDot active={state.loadingIndicator === "background-activity"} onClick={() => onChange({ loadingIndicator: "background-activity" })} />
+          <span className={`text-sm transition-colors ${state.loadingIndicator === "background-activity" ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF]"}`}>
+            Background activity
+          </span>
+          <span className="text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF] ml-1">edit in preview</span>
+        </div>
+
+        {/* Option 3 — Custom message */}
+        <div className="flex items-center gap-2.5">
+          <RadioDot active={state.loadingIndicator === "custom-message"} onClick={() => onChange({ loadingIndicator: "custom-message" })} />
+          <span
+            onClick={() => onChange({ loadingIndicator: "custom-message" })}
+            className={`text-sm cursor-pointer transition-colors shrink-0 ${state.loadingIndicator === "custom-message" ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF]"}`}
+          >
+            Custom message
+          </span>
+          <input
+            type="text"
+            value={state.loadingCustomMessage}
+            onChange={(e) => onChange({ loadingCustomMessage: e.target.value })}
+            disabled={state.loadingIndicator !== "custom-message"}
+            placeholder="e.g. Looking it up…"
+            className="flex-1 ml-1 px-3 py-1.5 text-sm rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          />
+        </div>
+
+      </div>
+    </Section>
+  );
+}
+
 export default function ConversationSettings({
   state,
   onChange,
@@ -264,7 +361,7 @@ export default function ConversationSettings({
       {/* ── Language ─────────────────────────────────── */}
       <GroupLabel>Language</GroupLabel>
 
-      <Section label="Agent Language" info>
+      <Section label="Agent Language" info tooltip="The language your agent responds in regardless of user language">
         <div className="relative">
           <select
             value={state.agentLanguage}
@@ -291,11 +388,11 @@ export default function ConversationSettings({
             <div className="flex items-center gap-2 mb-3">
               <SettingsIcon />
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Starter Questions</span>
-              <InfoIcon />
+              <InfoIcon tooltip="Pre-set questions shown to users when they open the chat" />
             </div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm text-[#737373] dark:text-[#7A9BBF]">Use context-rich Starter Questions</span>
-              <InfoIcon />
+              <InfoIcon tooltip="Generates dynamic questions from your knowledge base content" />
               <Toggle checked={state.useContextRichStarters} onChange={(v) => onChange({ useContextRichStarters: v })} />
               <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] ml-1">{state.useContextRichStarters ? "ON" : "OFF"}</span>
             </div>
@@ -376,53 +473,17 @@ export default function ConversationSettings({
       {/* ── Chat Interface ────────────────────────────── */}
       <GroupLabel>Chat Interface</GroupLabel>
 
-      <Section label="Placeholder Prompt" info>
+      <Section label="Placeholder Prompt" info tooltip="Hint text shown inside the chat input before the user types">
         <TextInput value={state.placeholderPrompt} onChange={(v) => onChange({ placeholderPrompt: v })} placeholder="e.g. Ask me anything…" />
       </Section>
 
-      <Section label="Loading Indicator" info>
-        <div className="flex flex-col gap-3">
-          <label className="flex items-center gap-2.5 cursor-pointer group">
-            <div
-              onClick={() => onChange({ loadingIndicator: "typing-dots" })}
-              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer
-                ${state.loadingIndicator === "typing-dots" ? "border-violet-600 bg-white dark:bg-[#111D30]" : "border-gray-300 dark:border-[#2A4060] bg-white dark:bg-[#111D30]"}`}
-            >
-              {state.loadingIndicator === "typing-dots" && <div className="w-2 h-2 rounded-full bg-violet-600" />}
-            </div>
-            <span onClick={() => onChange({ loadingIndicator: "typing-dots" })} className={`text-sm cursor-pointer transition-colors ${state.loadingIndicator === "typing-dots" ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF]"}`}>Typing dots</span>
-            <div className="flex items-center gap-1 ml-2">
-              {[0, 1, 2].map((i) => (
-                <span key={i} className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" style={{ animation: `bounce 1.2s ${i * 0.2}s infinite` }} />
-              ))}
-            </div>
-          </label>
-          <label className="flex items-center gap-2.5 cursor-pointer group">
-            <div
-              onClick={() => onChange({ loadingIndicator: "custom-message" })}
-              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer
-                ${state.loadingIndicator === "custom-message" ? "border-violet-600 bg-white dark:bg-[#111D30]" : "border-gray-300 dark:border-[#2A4060] bg-white dark:bg-[#111D30]"}`}
-            >
-              {state.loadingIndicator === "custom-message" && <div className="w-2 h-2 rounded-full bg-violet-600" />}
-            </div>
-            <span onClick={() => onChange({ loadingIndicator: "custom-message" })} className={`text-sm cursor-pointer transition-colors shrink-0 ${state.loadingIndicator === "custom-message" ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF]"}`}>Custom message</span>
-            <input
-              type="text"
-              value={state.loadingCustomMessage}
-              onChange={(e) => onChange({ loadingCustomMessage: e.target.value })}
-              disabled={state.loadingIndicator !== "custom-message"}
-              placeholder="e.g. Looking it up…"
-              className="flex-1 ml-1 px-3 py-1.5 text-sm rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            />
-          </label>
-        </div>
-      </Section>
+      <LoadingIndicatorSection state={state} onChange={onChange} />
 
-      <Section label="Custom Message Ending" info>
+      <Section label="Custom Message Ending" info tooltip="Text appended after the loading message, e.g. 'please wait...'">
         <TextInput value={state.customMessageEnding} onChange={(v) => onChange({ customMessageEnding: v })} placeholder="" />
       </Section>
 
-      <Section label="Markdown in Responses" info>
+      <Section label="Markdown in Responses" info tooltip="Renders bold, lists, headings, and links in agent responses">
         <RadioGroup
           options={[{ value: "enabled", label: "Enabled" }, { value: "disabled", label: "Disabled" }]}
           value={state.markdownInResponses}
@@ -437,18 +498,18 @@ export default function ConversationSettings({
         <TextInput value={state.iDontKnowMessage} onChange={(v) => onChange({ iDontKnowMessage: v })} placeholder="e.g. I don't have information on that topic." />
       </Section>
 
-      <Section label="Error Message" info>
+      <Section label="Error Message" info tooltip="Shown when the agent fails to generate a response">
         <TextInput value={state.errorMessage} onChange={(v) => onChange({ errorMessage: v })} placeholder="e.g. Something went wrong. Please try again." />
       </Section>
 
-      <Section label="Failed moderation message" info>
+      <Section label="Failed moderation message" info tooltip="Shown when a message is flagged by content moderation">
         <TextInput value={state.failedModerationMessage} onChange={(v) => onChange({ failedModerationMessage: v })} placeholder="e.g. I can't respond to that query." />
       </Section>
 
       {/* ── Memory ───────────────────────────────────── */}
       <GroupLabel>Memory</GroupLabel>
 
-      <Section label="Conversation Duration" info>
+      <Section label="Conversation Duration" info tooltip="How long the agent retains context from previous messages">
         <RadioGroup
           options={[
             { value: "unlimited", label: "Unlimited" },

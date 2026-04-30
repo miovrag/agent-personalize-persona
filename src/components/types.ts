@@ -20,7 +20,8 @@ export interface PersonaState {
   starterQuestionsCollapse: string;
   agentLanguage: string;
   placeholderPrompt: string;
-  loadingIndicator: "typing-dots" | "custom-message";
+  loadingIndicator: "typing-dots" | "custom-message" | "background-activity";
+  backgroundActivityMessages: string[];
   loadingCustomMessage: string;
   customMessageEnding: string;
   errorMessage: string;

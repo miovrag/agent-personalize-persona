@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PRESET_AVATARS } from "./avatarPresets";
 
 const FONT_STACKS: Record<string, string> = {
@@ -35,7 +35,12 @@ const INDICATOR_OPTIONS: { id: TypingStyle; label: string; desc: string }[] = [
   { id: "bars",  label: "Bars",    desc: "Equalizer bars" },
 ];
 
-const KEYFRAMES = `
+const KEYFRAMES_ACTIVITY = `
+@keyframes lp-fade-in  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lp-fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-4px); } }
+`;
+
+const KEYFRAMES = `${KEYFRAMES_ACTIVITY}
 @keyframes lp-bounce {
   0%,80%,100% { transform: translateY(0); opacity: 0.5; }
   40%          { transform: translateY(-6px); opacity: 1; }
@@ -133,6 +138,16 @@ interface LivePreviewProps {
   backgroundImageUrl?: string;
   typingIndicatorStyle?: TypingStyle;
   onTypingIndicatorChange?: (v: TypingStyle) => void;
+  loadingIndicator?: "typing-dots" | "custom-message" | "background-activity";
+  backgroundActivityMessages?: string[];
+  onBackgroundActivityMessagesChange?: (msgs: string[]) => void;
+  loadingCustomMessage?: string;
+  starterQuestions?: string[];
+  starterQuestionsHeader?: string;
+  starterQuestionsExpand?: string;
+  starterQuestionsCollapse?: string;
+  outputStyle?: string;
+  markdownInResponses?: "enabled" | "disabled";
 }
 
 export default function LivePreview({
@@ -143,8 +158,37 @@ export default function LivePreview({
   backgroundImageUrl = "",
   typingIndicatorStyle = "dots",
   onTypingIndicatorChange,
+  loadingIndicator = "typing-dots",
+  backgroundActivityMessages = [],
+  onBackgroundActivityMessagesChange,
+  loadingCustomMessage = "",
+  starterQuestions,
+  starterQuestionsHeader = "",
+  starterQuestionsExpand = "",
+  starterQuestionsCollapse = "",
+  outputStyle = "",
+  markdownInResponses = "enabled",
 }: LivePreviewProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [activityEditorOpen, setActivityEditorOpen] = useState(false);
+  const [suggestionsExpanded, setSuggestionsExpanded] = useState(false);
+  const [newActivityMsg, setNewActivityMsg] = useState("");
+  const activityInputRef = useRef<HTMLInputElement>(null);
+  const [activityIdx, setActivityIdx] = useState(0);
+  const [activityVisible, setActivityVisible] = useState(true);
+
+  useEffect(() => {
+    if (loadingIndicator !== "background-activity" || backgroundActivityMessages.length === 0) return;
+    const msgs = backgroundActivityMessages;
+    const cycle = setInterval(() => {
+      setActivityVisible(false);
+      setTimeout(() => {
+        setActivityIdx((i) => (i + 1) % msgs.length);
+        setActivityVisible(true);
+      }, 300);
+    }, 2200);
+    return () => clearInterval(cycle);
+  }, [loadingIndicator, backgroundActivityMessages]);
   const fontStack = FONT_STACKS[fontFamily] ?? FONT_STACKS["inter"];
 
   function resolveBg(): React.CSSProperties {
@@ -200,11 +244,112 @@ export default function LivePreview({
   }
   const headerFg = headerTextColor();
 
-  const suggestions = [
+  function buildSampleResponse(): React.ReactNode {
+    const md = markdownInResponses === "enabled";
+    const base = "text-sm text-[#404040] dark:text-[#C8D8EE] leading-relaxed";
+    const muted = "text-[#737373] dark:text-[#7A9BBF]";
+    const bold = "font-semibold text-[#262626] dark:text-[#C8D8EE]";
+
+    if (outputStyle === "bullets") {
+      return (
+        <div className="space-y-1.5">
+          {md && <p className={`${base} mb-2`}>Here&apos;s what I can help you with:</p>}
+          <ul className="space-y-1">
+            {["Getting started with the platform", "Configuring your account settings", "Finding relevant documentation", "Troubleshooting common issues"].map((item, i) => (
+              <li key={i} className={`flex items-start gap-2 ${base}`}>
+                {md
+                  ? <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  : <span className={muted}>•</span>}
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    if (outputStyle === "short-steps") {
+      return (
+        <div className="space-y-1.5">
+          {md && <p className={`${base} mb-2`}>Here&apos;s how to get started:</p>}
+          {["Create your account", "Set up your profile", "Launch your first project"].map((step, i) => (
+            <div key={i} className={`flex items-center gap-2.5 ${base}`}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0" style={{ backgroundColor: color }}>
+                {i + 1}
+              </span>
+              <span>{step}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (outputStyle === "step-guide") {
+      const steps = [
+        { title: "Create an account", desc: "Sign up and verify your email address" },
+        { title: "Complete your profile", desc: "Add your name, role, and preferences" },
+        { title: "Explore the dashboard", desc: "Familiarize yourself with the main interface" },
+        { title: "Start your first project", desc: "Use the quick-start wizard to set things up" },
+      ];
+      return (
+        <div className="space-y-2.5">
+          {md && <p className={`${base} mb-1`}>Follow these steps to get started:</p>}
+          {steps.map(({ title, desc }, i) => (
+            <div key={i} className="flex gap-3">
+              <div className="flex flex-col items-center shrink-0">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: color }}>{i + 1}</span>
+                {i < steps.length - 1 && <div className="w-px flex-1 mt-1" style={{ backgroundColor: `${color}40` }} />}
+              </div>
+              <div className="pb-2">
+                <p className={`text-sm ${md ? bold : "text-[#404040] dark:text-[#C8D8EE]"}`}>{title}</p>
+                <p className={`text-xs mt-0.5 ${muted}`}>{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (outputStyle === "detailed") {
+      return (
+        <p className={base}>
+          Getting started is straightforward. Our platform is designed to be intuitive from the moment you sign in.
+          {md && <> Once you&apos;ve created your account, you&apos;ll have access to all core features. The onboarding wizard will walk you through each step, and our <span className={bold}>knowledge base</span> has comprehensive guides for every use case.</>}
+        </p>
+      );
+    }
+
+    if (outputStyle === "summary") {
+      return (
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-2">
+            {md && <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md shrink-0 mt-0.5" style={{ backgroundColor: `${color}18`, color }}>Summary</span>}
+            <p className={base}>Yes, I can help you get started right away.</p>
+          </div>
+          {md && (
+            <div className="border-l-2 pl-3" style={{ borderColor: `${color}50` }}>
+              <p className={`text-xs ${muted} leading-relaxed`}>
+                Our platform offers guided onboarding, a full documentation library, and a support team available 24/7 to answer any questions along the way.
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return <p className={base}>Of course! I can help you get started. What specific aspect are you most interested in?</p>;
+  }
+
+  const COLLAPSED_COUNT = 2;
+  const defaultSuggestions = [
     "How do I get started with your services?",
     "Tell me about what you can help me with",
     "Where can I find more information?",
+    "What are your main features?",
   ];
+  const suggestions = starterQuestions && starterQuestions.length > 0 ? starterQuestions : defaultSuggestions;
+  const visibleSuggestions = suggestionsExpanded ? suggestions : suggestions.slice(0, COLLAPSED_COUNT);
+  const canExpand = suggestions.length > COLLAPSED_COUNT;
 
   return (
     <>
@@ -245,7 +390,12 @@ export default function LivePreview({
 
           {/* Suggestion chips */}
           <div className="ml-9 space-y-1.5">
-            {suggestions.map((s, i) => (
+            {starterQuestionsHeader || suggestions.length > 0 ? (
+              <p className="text-[10px] font-semibold text-[#A3A3A3] dark:text-[#7A9BBF] uppercase tracking-wide mb-1.5">
+                {starterQuestionsHeader || "How can I help you?"}
+              </p>
+            ) : null}
+            {visibleSuggestions.map((s, i) => (
               <button
                 key={i}
                 className={`block w-full text-left text-xs px-3 py-2 ${r.chip} bg-white dark:bg-[#111D30] border border-[#E5E5E5] dark:border-[#1E3050] text-[#525252] dark:text-[#C8D8EE] hover:bg-[#FAFAFA] dark:hover:bg-[#162238] transition-colors truncate`}
@@ -254,6 +404,23 @@ export default function LivePreview({
                 {s}
               </button>
             ))}
+            {canExpand && (
+              <button
+                onClick={() => setSuggestionsExpanded((v) => !v)}
+                className="flex items-center gap-1 text-[10px] font-medium transition-colors mt-0.5"
+                style={{ color }}
+              >
+                <svg
+                  width="10" height="10" viewBox="0 0 10 10" fill="none"
+                  className={`transition-transform duration-200 ${suggestionsExpanded ? "rotate-180" : ""}`}
+                >
+                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {suggestionsExpanded
+                  ? (starterQuestionsCollapse || "See less")
+                  : (starterQuestionsExpand || "See more")}
+              </button>
+            )}
           </div>
 
           {/* User message */}
@@ -269,30 +436,63 @@ export default function LivePreview({
               {avatarNode}
             </div>
             <div className={`bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] dark:border-[#1E3050] max-w-[85%]`}>
-              <p className="text-sm text-[#404040] dark:text-[#C8D8EE] leading-relaxed">
-                Of course! I can help you get started. What specific aspect are you most interested in?
-              </p>
+              {buildSampleResponse()}
             </div>
           </div>
 
-          {/* Typing indicator — clickable to change style */}
+          {/* Typing / loading indicator */}
           <div className="flex gap-2.5">
             <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color, fontFamily: "Roboto, system-ui, sans-serif" }}>
               {avatarNode}
             </div>
-            <button
-              onClick={() => setPickerOpen(true)}
-              title="Click to change typing indicator"
-              className={`group relative bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border transition-all duration-150 cursor-pointer`}
-              style={{ borderColor: pickerOpen ? color : "transparent" }}
-              onMouseEnter={(e) => { if (!pickerOpen) (e.currentTarget as HTMLElement).style.borderColor = `${color}80`; }}
-              onMouseLeave={(e) => { if (!pickerOpen) (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
-            >
-              <TypingIndicator style={typingIndicatorStyle} color={color} />
-              <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                Click to change
-              </span>
-            </button>
+            {loadingIndicator === "background-activity" ? (
+              <button
+                onClick={() => setActivityEditorOpen(true)}
+                title="Click to edit activity messages"
+                className={`group relative bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border transition-all duration-150 cursor-pointer flex items-center gap-2 max-w-[85%]`}
+                style={{ borderColor: activityEditorOpen ? color : "transparent" }}
+                onMouseEnter={(e) => { if (!activityEditorOpen) (e.currentTarget as HTMLElement).style.borderColor = `${color}80`; }}
+                onMouseLeave={(e) => { if (!activityEditorOpen) (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: color, animation: "lp-pulse-dot 1.5s ease-in-out infinite" }}
+                />
+                {backgroundActivityMessages.length > 0 ? (
+                  <span
+                    className="text-xs text-[#737373] dark:text-[#7A9BBF] whitespace-nowrap"
+                    style={{
+                      animation: activityVisible ? "lp-fade-in 0.3s ease forwards" : "lp-fade-out 0.25s ease forwards",
+                    }}
+                  >
+                    {backgroundActivityMessages[activityIdx % backgroundActivityMessages.length]}
+                  </span>
+                ) : (
+                  <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] italic">Add messages…</span>
+                )}
+                <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  Click to edit
+                </span>
+              </button>
+            ) : loadingIndicator === "custom-message" ? (
+              <div className={`bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] dark:border-[#1E3050]`}>
+                <p className="text-xs text-[#737373] dark:text-[#7A9BBF]">{loadingCustomMessage || "Looking for answer"}</p>
+              </div>
+            ) : (
+              <button
+                onClick={() => setPickerOpen(true)}
+                title="Click to change typing indicator"
+                className={`group relative bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border transition-all duration-150 cursor-pointer`}
+                style={{ borderColor: pickerOpen ? color : "transparent" }}
+                onMouseEnter={(e) => { if (!pickerOpen) (e.currentTarget as HTMLElement).style.borderColor = `${color}80`; }}
+                onMouseLeave={(e) => { if (!pickerOpen) (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
+              >
+                <TypingIndicator style={typingIndicatorStyle} color={color} />
+                <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  Click to change
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -311,6 +511,77 @@ export default function LivePreview({
           </div>
         </div>
       </div>
+
+      {/* Background activity editor modal */}
+      {activityEditorOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onClick={() => { setActivityEditorOpen(false); setNewActivityMsg(""); }}
+        >
+          <div
+            className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] dark:border-[#1E3050] shadow-[0_8px_40px_rgba(23,23,23,0.16)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] p-5 w-80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">Background activity</h3>
+                <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mt-0.5">Cycles through while agent is thinking</p>
+              </div>
+              <button
+                onClick={() => { setActivityEditorOpen(false); setNewActivityMsg(""); }}
+                className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#404040] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="flex flex-col gap-1.5 mb-3 max-h-48 overflow-y-auto">
+              {backgroundActivityMessages.map((msg, i) => (
+                <div key={i} className="flex items-center gap-2 group">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0 transition-all"
+                    style={{ backgroundColor: i === activityIdx % backgroundActivityMessages.length ? color : "#D4D4D4" }}
+                  />
+                  <span className="flex-1 text-sm text-[#404040] dark:text-[#C8D8EE] px-2.5 py-1.5 rounded-lg bg-[#FAFAFA] dark:bg-[#162238] border border-[#F0F0F0] dark:border-[#1E3050]">
+                    {msg}
+                  </span>
+                  <button
+                    onClick={() => onBackgroundActivityMessagesChange?.(backgroundActivityMessages.filter((_, idx) => idx !== i))}
+                    className="p-1 rounded text-[#D4D4D4] dark:text-[#4A6A8A] hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                ref={activityInputRef}
+                type="text"
+                value={newActivityMsg}
+                onChange={(e) => setNewActivityMsg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const m = newActivityMsg.trim();
+                    if (m) { onBackgroundActivityMessagesChange?.([...backgroundActivityMessages, m]); setNewActivityMsg(""); }
+                  }
+                }}
+                placeholder="Add a status message…"
+                className="flex-1 px-3 py-2 text-sm rounded-xl border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 placeholder:text-[#C0C0C0] dark:placeholder:text-[#4A6A8A] transition-all"
+              />
+              <button
+                onClick={() => {
+                  const m = newActivityMsg.trim();
+                  if (m) { onBackgroundActivityMessagesChange?.([...backgroundActivityMessages, m]); setNewActivityMsg(""); activityInputRef.current?.focus(); }
+                }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                style={{ backgroundColor: color }}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Typing indicator picker modal */}
       {pickerOpen && (
