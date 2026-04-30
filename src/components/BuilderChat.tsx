@@ -368,51 +368,67 @@ function relatedSettingsSuggestions(patch: Partial<PersonaState>, s: PersonaStat
   const keys = Object.keys(patch) as (keyof PersonaState)[];
   const out: string[] = [];
 
+  // Avatar → only suggest display toggles that aren't already on
   if (keys.includes("agentAvatarUrl")) {
-    if (!s.inChatAgentAvatar) out.push("Enable agent avatar in chat messages");
-    if (!s.titleAvatarEnabled) out.push("Show avatar in the chat title bar");
-    if (!s.spotlightAvatarEnabled) out.push("Enable spotlight avatar at the top of chat");
+    if (!s.inChatAgentAvatar) out.push("Show avatar in chat messages");
+    if (!s.titleAvatarEnabled) out.push("Show avatar in the title bar");
+    if (!s.spotlightAvatarEnabled) out.push("Enable spotlight avatar");
   }
 
+  // Primary color → visual adjacencies only when they're misaligned
   if (keys.includes("agentColor")) {
-    if (s.titleColor && s.titleColor !== patch.agentColor)
-      out.push(`Set title color to ${patch.agentColor}`);
-    out.push("Update agent style to complement the new color");
-    if (s.backgroundType === "color") out.push("Update background color to match brand");
+    if (s.agentColorScheme === "legacy") out.push("Switch to adaptive color scheme");
+    if (s.backgroundType === "color" && !s.backgroundColor) out.push("Set a background color to match");
+    if (s.backgroundType !== "image") out.push("Try a background that complements this color");
   }
 
-  if (keys.some(k => ["agentName", "role", "agentRole"].includes(k))) {
-    if (!s.agentTitle) out.push("Set a visible agent title for the chat header");
-    out.push("Update the agent's mission to match the new role");
+  // Background → suggest matching primary color if it's still the default
+  if (keys.some(k => (["backgroundType", "backgroundImageUrl", "backgroundColor"] as (keyof PersonaState)[]).includes(k))) {
+    if (s.agentColor === "#7367F0") out.push("Update primary color to match this background");
   }
 
-  if (keys.includes("mission") || keys.includes("audience")) {
-    out.push("Add guardrails to protect scope for this audience");
-    if (!s.starterQuestions.length) out.push("Add starter questions for this use case");
+  // Font → suggest a corner style pairing (only one, specific to the font)
+  if (keys.includes("fontFamily")) {
+    const pairings: Partial<Record<PersonaState["fontFamily"], string>> = {
+      merriweather: "Try sharp corners — serif fonts suit geometric edges",
+      nunito:       "Try round corners — Nunito pairs well with pill shapes",
+      "public-sans":"Try soft corners for a clean, balanced feel",
+      roboto:       "Try soft corners to match Roboto's neutral geometry",
+    };
+    const tip = pairings[patch.fontFamily as PersonaState["fontFamily"]];
+    if (tip) out.push(tip);
   }
 
-  if (keys.includes("tone")) {
-    if (!s.styles.length) out.push("Add a communication style to reinforce the tone");
-    out.push("Update guardrails to match the new tone");
+  // Corner style → suggest a font pairing (only one, specific to the style)
+  if (keys.includes("agentStyle")) {
+    const pairings: Partial<Record<PersonaState["agentStyle"], string>> = {
+      sharp: "Try Merriweather or Public Sans to match the angular look",
+      round: "Try Nunito — rounds naturally with pill shapes",
+      soft:  "Try Inter or Roboto for a clean soft feel",
+    };
+    const tip = pairings[patch.agentStyle as PersonaState["agentStyle"]];
+    if (tip) out.push(tip);
   }
 
-  if (keys.some(k => ["styles", "guardrails"].includes(k))) {
-    out.push("Adjust tone slider to align with this style");
+  // Mission or audience → protective settings not yet configured
+  if (keys.some(k => (["mission", "audience"] as (keyof PersonaState)[]).includes(k))) {
+    if (!s.guardrails.length) out.push("Add guardrails to protect scope");
+    if (!s.starterQuestions.length) out.push("Add starter questions for this audience");
   }
 
-  if (keys.includes("iDontKnowMessage")) {
-    out.push("Set a custom error message for failed moderation");
+  // Tone → reinforce with a style, but only when no styles are set yet
+  if (keys.includes("tone") && !s.styles.length) {
+    const t = patch.tone as number;
+    if (t <= 30) out.push("Add Technical or Concise style to reinforce formality");
+    else if (t >= 70) out.push("Add Friendly or Empathetic style to reinforce casual tone");
+    else out.push("Add a communication style to reinforce this tone");
   }
 
-  if (keys.includes("placeholderPrompt")) {
-    out.push("Add starter questions to guide first-time users");
-  }
+  // Standalone fields — no suggestions emitted:
+  // agentName, agentRole, role, styles, guardrails, behaviorToggles,
+  // outputStyle, additionalInstructions, boundaries, loadingIndicator,
+  // agentColorScheme, agentTitle, titleColor
 
-  if (keys.some(k => ["agentVisibility", "recaptcha"].includes(k))) {
-    out.push("Review whitelisted domains for this visibility setting");
-  }
-
-  // deduplicate, max 3
   return [...new Set(out)].slice(0, 3);
 }
 
