@@ -39,14 +39,14 @@ function IntroModal({ onClose }: { onClose: () => void }) {
                 <path d="M8 9h8M8 13h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
               ),
               title: "Chat to configure",
-              desc: "Type commands like "make the tone more casual" or "use sharp corners" and your agent updates instantly.",
+              desc: 'Type commands like "make the tone more casual" or "use sharp corners" and your agent updates instantly.',
             },
             {
               icon: (
                 <><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12l2 2 4-4"/></>
               ),
               title: "Inline settings widgets",
-              desc: "Say "change the font" or "loading indicator settings" to open the exact settings panel right in chat.",
+              desc: 'Say "change the font" or "loading indicator settings" to open the exact settings panel right in chat.',
             },
             {
               icon: (
