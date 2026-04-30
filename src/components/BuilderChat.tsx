@@ -36,7 +36,7 @@ interface Props {
 
 type SuggestionCategory =
   | "support" | "expert" | "ops" | "coaching" | "content"
-  | "guardrails" | "behavior" | "tone" | "format";
+  | "guardrails" | "behavior" | "tone" | "format" | "style";
 
 const SUGGESTION_META: Record<string, { icon: string; category: SuggestionCategory }> = {
   // ── Archetypes ──────────────────────────────────────────────────────────────
@@ -132,6 +132,18 @@ const SUGGESTION_META: Record<string, { icon: string; category: SuggestionCatego
   "Detailed responses":       { icon: "≣",  category: "format"     },
   "Adaptive length":          { icon: "◎",  category: "format"     },
   "Use headers & sections":   { icon: "§",  category: "format"     },
+
+  // ── Style ───────────────────────────────────────────────────────────────────
+  "Use sharp corners":        { icon: "▪",  category: "style"      },
+  "Use soft rounded corners": { icon: "▫",  category: "style"      },
+  "Use pill-shaped bubbles":  { icon: "◯",  category: "style"      },
+  "Change primary color":     { icon: "🎨", category: "style"      },
+  "Set a gradient background":{ icon: "✦",  category: "style"      },
+  "Use a light background":   { icon: "☀",  category: "style"      },
+  "Use a dark background":    { icon: "🌙", category: "style"      },
+  "Switch to serif font":     { icon: "A",  category: "style"      },
+  "Switch to rounded font":   { icon: "a",  category: "style"      },
+  "Match brand colors":       { icon: "◈",  category: "style"      },
 };
 
 // Initial visible chips — mix of growth opps + popular archetypes + config classics
@@ -196,7 +208,40 @@ const CATEGORY_CONFIG: Record<SuggestionCategory, { chip: string; label: string;
   behavior:   { label: "Behavior",   dot: "bg-sky-400",    desc: "Shape how the agent acts — clarifying questions, citations, summaries, and follow-ups.",   chip: "bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 hover:border-sky-400 dark:hover:border-sky-600" },
   tone:       { label: "Tone",       dot: "bg-orange-400", desc: "Set the agent's voice — from formal and authoritative to warm and conversational.",         chip: "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/60 text-orange-800 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40 hover:border-orange-400 dark:hover:border-orange-600" },
   format:     { label: "Format",     dot: "bg-cyan-400",   desc: "Control response structure — bullets, step-by-step guides, headers, or adaptive length.",   chip: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800/60 text-cyan-800 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 hover:border-cyan-400 dark:hover:border-cyan-600" },
+  style:      { label: "Style",      dot: "bg-fuchsia-400", desc: "Customize the visual look — colors, fonts, corner radius, and background of your chat widget.", chip: "bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200 dark:border-fuchsia-800/60 text-fuchsia-800 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 hover:border-fuchsia-400 dark:hover:border-fuchsia-600" },
 };
+
+type StyleChipGroup = "corners" | "background" | "font";
+
+const STYLE_CHIP_GROUPS: Record<StyleChipGroup, { label: string; dot: string; desc: string }> = {
+  corners:    { label: "Corners",    dot: "bg-fuchsia-400", desc: "Set the corner radius of chat bubbles, inputs, and buttons." },
+  background: { label: "Background", dot: "bg-fuchsia-400", desc: "Pick a solid color or a gradient preset for the chat area." },
+  font:       { label: "Font",       dot: "bg-fuchsia-400", desc: "Select the typeface used throughout the chat widget." },
+};
+
+const STYLE_CHIPS: {
+  label: string;
+  message: string;
+  group: StyleChipGroup;
+  isActive: (s: PersonaState) => boolean;
+  cls?: string;
+}[] = [
+  { group: "corners",    label: "Sharp corners",  message: "Use sharp corners",                isActive: (s) => s.agentStyle === "sharp" },
+  { group: "corners",    label: "Soft corners",   message: "Use soft rounded corners",         isActive: (s) => s.agentStyle === "soft" },
+  { group: "corners",    label: "Round corners",  message: "Use pill-shaped round corners",    isActive: (s) => s.agentStyle === "round" },
+  { group: "background", label: "Light bg",       message: "Use a light white background",     isActive: (s) => s.backgroundType === "color" && (!s.backgroundColor || s.backgroundColor === "#FAFAFA") },
+  { group: "background", label: "Dark bg",        message: "Use a dark background",            isActive: (s) => s.backgroundType === "color" && s.backgroundColor === "#111827" },
+  { group: "background", label: "Ocean",          message: "Set Ocean gradient background",    isActive: (s) => s.backgroundImageUrl === "preset:ocean" },
+  { group: "background", label: "Aurora",         message: "Set Aurora gradient background",   isActive: (s) => s.backgroundImageUrl === "preset:aurora" },
+  { group: "background", label: "Dusk",           message: "Set Dusk gradient background",     isActive: (s) => s.backgroundImageUrl === "preset:dusk" },
+  { group: "background", label: "Mesh",           message: "Set Mesh gradient background",     isActive: (s) => s.backgroundImageUrl === "preset:mesh" },
+  { group: "background", label: "Forest",         message: "Set Forest gradient background",   isActive: (s) => s.backgroundImageUrl === "preset:forest" },
+  { group: "font",       label: "Inter",          message: "Switch font to Inter",             cls: "font-preview-inter",        isActive: (s) => !s.fontFamily || s.fontFamily === "inter" },
+  { group: "font",       label: "Public Sans",    message: "Switch font to Public Sans",       cls: "font-preview-public-sans",  isActive: (s) => s.fontFamily === "public-sans" },
+  { group: "font",       label: "Nunito",         message: "Switch font to Nunito",            cls: "font-preview-nunito",       isActive: (s) => s.fontFamily === "nunito" },
+  { group: "font",       label: "Merriweather",   message: "Switch font to Merriweather",      cls: "font-preview-merriweather", isActive: (s) => s.fontFamily === "merriweather" },
+  { group: "font",       label: "Roboto",         message: "Switch font to Roboto",            cls: "font-preview-roboto",       isActive: (s) => s.fontFamily === "roboto" },
+];
 
 const DIFF_FIELD_LABELS: Partial<Record<keyof PersonaState, string>> = {
   agentName: "Name", role: "Role", mission: "Mission",
@@ -294,7 +339,11 @@ export default function BuilderChat({ state, onApply }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [chipsExpanded, setChipsExpanded] = useState(false);
-  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(true);
+  const [styleIntroSeen, setStyleIntroSeen] = useState(false);
+  function dismissStyleIntro() {
+    setStyleIntroSeen(true);
+  }
+  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(() => _followUpQ);
   const [followUpSuggestions, setFollowUpSuggestions] = useState<string[] | null>(() => _followUpS);
   const [phIndex, setPhIndex] = useState(0);
@@ -583,7 +632,7 @@ export default function BuilderChat({ state, onApply }: Props) {
     }
   }
 
-  const CAT_ORDER: SuggestionCategory[] = ["support","guardrails","expert","ops","coaching","content","behavior","tone","format"];
+  const CAT_ORDER: SuggestionCategory[] = ["support","guardrails","expert","ops","coaching","content","behavior","tone","format","style"];
 
   function applySort(chips: string[]): string[] {
     if (sortOrder === "alpha") return chips.slice().sort((a, b) => a.localeCompare(b));
@@ -611,19 +660,21 @@ export default function BuilderChat({ state, onApply }: Props) {
   );
 
   const TABS: { id: SuggestionCategory | "all" | "actions"; label: string; activeClass: string }[] = [
-    { id: "all",        label: "All",        activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "support",    label: "Support",    activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "guardrails", label: "Guardrails", activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "expert",     label: "Expert ✦",   activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "ops",        label: "Ops ✦",      activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "coaching",   label: "Coaching",   activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "content",    label: "Content",    activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "behavior",   label: "Behavior",   activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "tone",       label: "Tone",       activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "format",     label: "Format",     activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
-    { id: "actions",    label: "Actions",    activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "all",      label: "All",      activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "tone",     label: "Tone",     activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "behavior", label: "Behavior", activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "style",    label: "Style",    activeClass: "bg-fuchsia-600 text-white" },
+    { id: "support",  label: "Support",  activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "content",  label: "Content",  activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
+    { id: "actions",  label: "Actions",  activeClass: "bg-gray-800 dark:bg-[#C8D8EE] text-white dark:text-[#0B1426]" },
   ];
   const isEmptyState = messages.length === 1 && messages[0].id === INIT_ID;
+
+  const styleR = {
+    sharp: { bubbleUser: "rounded-sm", bubbleBot: "rounded-sm", loading: "rounded-sm", input: "rounded-md", btn: "rounded-md", chip: "rounded-md" },
+    soft:  { bubbleUser: "rounded-2xl rounded-br-sm", bubbleBot: "rounded-2xl rounded-bl-sm", loading: "rounded-2xl rounded-bl-sm", input: "rounded-xl", btn: "rounded-xl", chip: "rounded-xl" },
+    round: { bubbleUser: "rounded-3xl rounded-br-lg", bubbleBot: "rounded-3xl rounded-bl-lg", loading: "rounded-3xl rounded-bl-lg", input: "rounded-2xl", btn: "rounded-2xl", chip: "rounded-2xl" },
+  }[state.agentStyle];
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -647,12 +698,12 @@ export default function BuilderChat({ state, onApply }: Props) {
         {messages.map((msg) => (
           <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div
-              className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed
+              className={`max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed
                 ${msg.role === "user"
-                  ? "bg-violet-600 text-white rounded-br-sm"
+                  ? `bg-violet-600 text-white ${styleR.bubbleUser}`
                   : msg.role === "error"
-                    ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-bl-sm"
-                    : "bg-white dark:bg-[#111D30] text-[#404040] dark:text-[#C8D8EE] border border-[#F5F5F5] dark:border-[#1E3050] rounded-bl-sm"
+                    ? `bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 ${styleR.bubbleBot}`
+                    : `bg-white dark:bg-[#111D30] text-[#404040] dark:text-[#C8D8EE] border border-[#F5F5F5] dark:border-[#1E3050] ${styleR.bubbleBot}`
                 }`}
             >
               {msg.attachments && msg.attachments.length > 0 && (
@@ -737,7 +788,7 @@ export default function BuilderChat({ state, onApply }: Props) {
         {/* Loading indicator */}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-[#111D30] border border-[#F5F5F5] dark:border-[#1E3050] rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
+            <div className={`bg-white dark:bg-[#111D30] border border-[#F5F5F5] dark:border-[#1E3050] ${styleR.loading} px-4 py-3 flex gap-1.5 items-center`}>
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
@@ -766,7 +817,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                   <button
                     key={s}
                     onClick={() => sendText(s)}
-                    className="px-3.5 py-2 text-xs font-semibold rounded-xl border-2 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600 transition-all duration-150 hover:scale-[1.03] active:scale-[0.97] shadow-sm"
+                    className={`px-3.5 py-2 text-xs font-semibold border-2 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:border-violet-400 dark:hover:border-violet-600 transition-all duration-150 hover:scale-[1.03] active:scale-[0.97] shadow-sm ${styleR.chip}`}
                   >
                     {s}
                   </button>
@@ -835,7 +886,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                 >
                   <span>CustomGPT.ai suggestions</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="18 15 12 9 6 15"/>
+                    <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
               </Tip>
@@ -943,7 +994,7 @@ export default function BuilderChat({ state, onApply }: Props) {
                       className="p-1 rounded-md text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        <polyline points="18 15 12 21 6 15"/><line x1="12" y1="3" x2="12" y2="21"/>
                       </svg>
                     </button>
                   </Tip>
@@ -953,7 +1004,7 @@ export default function BuilderChat({ state, onApply }: Props) {
 
             <div className="px-4 pt-3 pb-0 space-y-3 w-full overflow-x-hidden">
             {/* Content area — fixed height when collapsed, auto when expanded */}
-            <div style={{ height: chipsExpanded ? "35vh" : "110px", overflow: "hidden", transition: "height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1)" }}>
+            <div style={{ height: chipsExpanded || activeTab === "style" ? "35vh" : "110px", overflow: "hidden", transition: "height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1)" }}>
             <div key={activeTab} className="tab-content h-full">
             {activeTab === "actions" ? (
               <div className="flex items-start gap-3 py-1">
@@ -1003,6 +1054,71 @@ export default function BuilderChat({ state, onApply }: Props) {
                   );
                 })}
               </div>
+            ) : activeTab === "style" ? (
+              /* Style tab — intro or grouped chips */
+              !styleIntroSeen ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 px-2 text-center">
+                <div className="w-10 h-10 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-900/30 flex items-center justify-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-fuchsia-600 dark:text-fuchsia-400">
+                    <circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/>
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+                  </svg>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">Style your chat widget</p>
+                  <p className="text-xs text-[#737373] dark:text-[#7A9BBF] leading-5">
+                    Describe the look you want in the chat — <span className="italic">"dark background, round corners".</span><br />
+                    Or use the shortcuts below to set corners, background, font, and more in one tap.
+                  </p>
+                </div>
+                <button
+                  onClick={dismissStyleIntro}
+                  className="mt-1 px-4 py-1.5 text-xs font-semibold rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white transition-colors"
+                >
+                  Let's go →
+                </button>
+              </div>
+              ) : (
+              <div className="overflow-y-auto h-full pr-3" style={{ scrollbarWidth: "none" }}>
+                <p className="text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed mb-3">
+                  Type what you want in the chat or tap a shortcut to change the look instantly.
+                </p>
+                {(Object.keys(STYLE_CHIP_GROUPS) as StyleChipGroup[]).map((grp) => {
+                  const cfg = STYLE_CHIP_GROUPS[grp];
+                  const chips = STYLE_CHIPS.filter((c) => c.group === grp);
+                  return (
+                    <div key={grp} className="group/cat">
+                      <div className="sticky top-0 bg-white dark:bg-[#111D30] -mx-1 px-1 -mt-3 pt-3 z-10 cursor-default pb-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-150 group-hover/cat:scale-125 ${cfg.dot}`} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[#A3A3A3] dark:text-[#7A9BBF] group-hover/cat:text-[#525252] dark:group-hover/cat:text-[#C8D8EE] transition-colors duration-150">{cfg.label}</span>
+                        </div>
+                        <p className="text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF] leading-relaxed pl-3">{cfg.desc}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pb-3 pl-0.5">
+                        {chips.map((chip) => {
+                          const active = chip.isActive(state);
+                          return (
+                            <button
+                              key={chip.label}
+                              onClick={() => sendText(chip.message)}
+                              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl border transition-all duration-150 ${chip.cls ?? ""} ${
+                                active
+                                  ? "border-fuchsia-500 bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-200"
+                                  : "bg-fuchsia-50 dark:bg-fuchsia-900/20 border-fuchsia-200 dark:border-fuchsia-800/60 text-fuchsia-800 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 hover:border-fuchsia-400 dark:hover:border-fuchsia-600"
+                              }`}
+                            >
+                              {active && <span className="text-[9px] leading-none text-fuchsia-500 dark:text-fuchsia-400">✓</span>}
+                              {chip.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              )
             ) : (
               /* Collapsed or single-tab */
               <div
@@ -1084,7 +1200,7 @@ export default function BuilderChat({ state, onApply }: Props) {
             {/* Input row with drag-drop */}
             <div className="relative flex items-end gap-2">
               <div
-                className={`relative flex-1 min-w-0 flex items-end rounded-xl border bg-white dark:bg-[#162238] transition-all
+                className={`relative flex-1 min-w-0 flex items-end ${styleR.input} border bg-white dark:bg-[#162238] transition-all
                   ${isDragging
                     ? "border-violet-400 ring-2 ring-violet-100 dark:ring-violet-900"
                     : "border-[#E5E5E5] dark:border-[#1E3050] focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 dark:focus-within:ring-violet-900"
@@ -1129,7 +1245,7 @@ export default function BuilderChat({ state, onApply }: Props) {
 
                 {/* Drag overlay */}
                 {isDragging && (
-                  <div className="absolute inset-0 rounded-xl bg-violet-50/90 dark:bg-violet-900/40 flex items-center justify-center pointer-events-none">
+                  <div className={`absolute inset-0 ${styleR.input} bg-violet-50/90 dark:bg-violet-900/40 flex items-center justify-center pointer-events-none`}>
                     <div className="flex items-center gap-2 text-sm font-medium text-violet-600 dark:text-violet-400">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
@@ -1143,26 +1259,26 @@ export default function BuilderChat({ state, onApply }: Props) {
               <button
                 onClick={() => sendText(input)}
                 disabled={(!input.trim() && attachedFiles.length === 0) || loading}
-                className="shrink-0 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                className={`shrink-0 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold ${styleR.btn} transition-colors`}
               >
                 {loading ? "…" : "Send"}
               </button>
-            </div>
 
-            {/* Placeholder — shown when no input */}
-            {!input && (
-              <span
-                className="pointer-events-none absolute text-sm text-[#A3A3A3] dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
-                style={{
-                  bottom: "10px",
-                  left: "calc(0.5rem + 40px)",
-                  opacity: phVisible ? 1 : 0,
-                  transform: `translateY(${phVisible ? "0" : "6px"})`,
-                }}
-              >
-                {PLACEHOLDERS[phIndex]}
-              </span>
-            )}
+              {/* Placeholder — shown when no input */}
+              {!input && (
+                <span
+                  className="pointer-events-none absolute text-sm text-[#A3A3A3] dark:text-[#7A9BBF] transition-all duration-200 whitespace-nowrap overflow-hidden"
+                  style={{
+                    bottom: "10px",
+                    left: "calc(0.5rem + 40px)",
+                    opacity: phVisible ? 1 : 0,
+                    transform: `translateY(${phVisible ? "0" : "6px"})`,
+                  }}
+                >
+                  {PLACEHOLDERS[phIndex]}
+                </span>
+              )}
+            </div>
           </div>
 
           <input

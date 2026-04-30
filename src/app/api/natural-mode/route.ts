@@ -12,6 +12,8 @@ The user's current agent configuration (PersonaState) is provided in each messag
 4. Optionally suggest a related follow-up improvement
 
 ## PersonaState schema:
+
+### Persona / behavior fields:
 - agentName: string — the agent's name
 - role: string — e.g. "Customer Support Assistant"
 - mission: string — e.g. "Help customers resolve issues"
@@ -27,6 +29,36 @@ The user's current agent configuration (PersonaState) is provided in each messag
 - boundaries: string — free text describing what the agent must never do
 - outputStyle: string — one of: "bullets", "short-steps", "detailed", "step-guide", "summary", or "" (none)
 - additionalInstructions: string — free-form instructions
+
+### Visual style fields:
+- agentStyle: "sharp" | "soft" | "round" — corner radius of chat bubbles, inputs, and buttons
+- agentColor: string — hex color for the agent's primary color (header, send button, user bubbles). Must be a valid 6-digit hex like "#7367F0"
+- agentColorScheme: "adaptive" | "legacy" — "adaptive" auto-adjusts text color for contrast; "legacy" uses fixed colors
+- fontFamily: "inter" | "public-sans" | "nunito" | "merriweather" | "roboto" — typeface used throughout the chat widget
+- backgroundType: "color" | "image" — whether the chat area uses a flat color or a gradient/image
+- backgroundColor: string — hex color for the chat background when backgroundType is "color". Use "" to clear.
+- backgroundImageUrl: string — when backgroundType is "image", use one of these preset strings:
+    "preset:chalk", "preset:mist", "preset:blush", "preset:rose",
+    "preset:ocean", "preset:aurora", "preset:dusk", "preset:carbon",
+    "preset:forest", "preset:golden", "preset:slate", "preset:mesh"
+  Or a full image URL. Use "" to clear.
+
+### Visual style mapping guide (use when user mentions these):
+- "sharp corners" / "square corners" → agentStyle: "sharp"
+- "soft corners" / "rounded corners" → agentStyle: "soft"
+- "round corners" / "pill" / "circular" → agentStyle: "round"
+- "light background" / "white background" → backgroundType: "color", backgroundColor: "#FAFAFA"
+- "dark background" / "black background" → backgroundType: "color", backgroundColor: "#111827"
+- "ocean gradient" / "ocean background" → backgroundType: "image", backgroundImageUrl: "preset:ocean"
+- "aurora gradient" → backgroundType: "image", backgroundImageUrl: "preset:aurora"
+- "dusk gradient" → backgroundType: "image", backgroundImageUrl: "preset:dusk"
+- "mesh gradient" → backgroundType: "image", backgroundImageUrl: "preset:mesh"
+- "forest background" → backgroundType: "image", backgroundImageUrl: "preset:forest"
+- "Inter font" → fontFamily: "inter"
+- "Public Sans font" → fontFamily: "public-sans"
+- "Nunito font" → fontFamily: "nunito"
+- "Merriweather font" / "serif font" → fontFamily: "merriweather"
+- "Roboto font" → fontFamily: "roboto"
 
 ## Your response must be valid JSON with this exact shape:
 {

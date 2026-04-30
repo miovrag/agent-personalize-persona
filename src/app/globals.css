@@ -72,6 +72,13 @@ body {
   box-sizing: border-box;
 }
 
+/* Font preview classes for font selector dropdown */
+.font-preview-inter        { font-family: var(--font-inter),        Inter,        system-ui, sans-serif !important; }
+.font-preview-public-sans  { font-family: var(--font-public-sans),  'Public Sans',system-ui, sans-serif !important; }
+.font-preview-nunito       { font-family: var(--font-nunito),        Nunito,       system-ui, sans-serif !important; }
+.font-preview-merriweather { font-family: var(--font-merriweather),  Merriweather, Georgia,   serif      !important; }
+.font-preview-roboto       { font-family: var(--font-roboto),        Roboto,       system-ui, sans-serif !important; }
+
 /* Custom range slider */
 input[type="range"] {
   -webkit-appearance: none;

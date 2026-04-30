@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
 import type { PersonaState } from "./types";
 import { AGENT_ROLE_OPTIONS } from "./types";
+import { PRESET_AVATARS, getInitials, InitialsAvatar } from "./avatarPresets";
 
 const AGENT_ROLE_DESCRIPTIONS: Record<string, string> = {
   "Enterprise Search": "Helps employees find information across internal documents, wikis, and knowledge bases quickly.",
@@ -110,15 +111,24 @@ function ColorPickerPopover({
 }) {
   const svCanvasRef = useRef<HTMLCanvasElement>(null);
   const hueCanvasRef = useRef<HTMLCanvasElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<'sv' | 'hue' | null>(null);
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  useEffect(() => {
-    if (!anchorRef.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-    setPos({ top: rect.bottom + 8, left: rect.left });
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: -9999, left: -9999 });
+  useLayoutEffect(() => {
+    if (!anchorRef.current || !popoverRef.current) return;
+    const anchor = anchorRef.current.getBoundingClientRect();
+    const ph = popoverRef.current.offsetHeight;
+    const pw = popoverRef.current.offsetWidth;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const top = anchor.bottom + 8 + ph > vh
+      ? Math.max(8, anchor.top - 8 - ph)
+      : anchor.bottom + 8;
+    const left = Math.min(anchor.left, vw - pw - 8);
+    setPos(prev => prev.top === top && prev.left === left ? prev : { top, left });
   }, [anchorRef]);
 
   const initHsv = (): [number, number, number] => {
@@ -131,6 +141,17 @@ function ColorPickerPopover({
   const [val, setVal] = useState(() => initHsv()[2]);
   const [currentHex, setCurrentHex] = useState(initialValue);
   const [hexInput, setHexInput] = useState(initialValue);
+
+  const STORAGE_KEY = "cg-custom-color-presets";
+  const [customPresets, setCustomPresets] = useState<string[]>([]);
+  useEffect(() => {
+    try { setCustomPresets(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch { /* ignore */ }
+  }, []);
+  function savePreset() {
+    const next = [currentHex, ...customPresets.filter(c => c.toLowerCase() !== currentHex.toLowerCase())].slice(0, 10);
+    setCustomPresets(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  }
 
   // Live refs for use inside stable drag-effect closure
   const hueR = useRef(hue), satR = useRef(sat), valR = useRef(val);
@@ -210,6 +231,7 @@ function ColorPickerPopover({
 
   return (
     <div
+      ref={popoverRef}
       className="fixed z-50 bg-white dark:bg-[#111D30] rounded-xl shadow-xl border border-[#E5E5E5] dark:border-[#1E3050] p-3 w-[220px]"
       style={{ top: pos.top, left: pos.left }}
     >
@@ -250,6 +272,62 @@ function ColorPickerPopover({
             boxShadow: '0 0 0 2px white, 0 0 0 3px rgba(0,0,0,0.25)',
           }}
         />
+      </div>
+
+      {/* Saved presets row */}
+      <div className="flex items-center gap-1.5 mb-2">
+        <button
+          onClick={savePreset}
+          title="Save current color"
+          className="w-5 h-5 rounded-md border border-dashed border-[#A3A3A3] dark:border-[#4A6A8A] flex items-center justify-center text-[#A3A3A3] dark:text-[#7A9BBF] hover:border-violet-400 hover:text-violet-500 transition-colors shrink-0"
+        >
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M4 1v6M1 4h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        </button>
+        {customPresets.length === 0 && (
+          <span className="text-[9px] text-[#C0C0C0] dark:text-[#4A6A8A] italic">No saved colors yet</span>
+        )}
+        {customPresets.map((preset) => (
+          <button
+            key={preset}
+            title={preset}
+            onClick={() => {
+              const rgb = hexToRgb(preset)!;
+              const [nh, ns, nv] = rgbToHsv(...rgb);
+              setHue(nh); setSat(ns); setVal(nv);
+              hueR.current = nh; satR.current = ns; valR.current = nv;
+              setCurrentHex(preset); setHexInput(preset); onChange(preset);
+            }}
+            className="w-5 h-5 rounded-md border-2 transition-all duration-100 hover:scale-110 shrink-0"
+            style={{
+              backgroundColor: preset,
+              borderColor: currentHex.toLowerCase() === preset.toLowerCase() ? "white" : "transparent",
+              boxShadow: currentHex.toLowerCase() === preset.toLowerCase() ? `0 0 0 2px ${preset}` : undefined,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Default presets row */}
+      <div className="flex gap-1.5 mb-3 flex-wrap">
+        {["#7367F0","#2563EB","#0EA5E9","#10B981","#F59E0B","#EF4444","#EC4899","#8B5CF6","#F97316","#64748B"].map((preset) => (
+          <button
+            key={preset}
+            title={preset}
+            onClick={() => {
+              const rgb = hexToRgb(preset)!;
+              const [nh, ns, nv] = rgbToHsv(...rgb);
+              setHue(nh); setSat(ns); setVal(nv);
+              hueR.current = nh; satR.current = ns; valR.current = nv;
+              setCurrentHex(preset); setHexInput(preset); onChange(preset);
+            }}
+            className="w-5 h-5 rounded-md border-2 transition-all duration-100 hover:scale-110"
+            style={{
+              backgroundColor: preset,
+              borderColor: currentHex.toLowerCase() === preset.toLowerCase() ? "white" : "transparent",
+              boxShadow: currentHex.toLowerCase() === preset.toLowerCase() ? `0 0 0 2px ${preset}` : undefined,
+            }}
+          />
+        ))}
       </div>
 
       {/* Hex input */}
@@ -359,152 +437,6 @@ const BG_PRESETS: { id: string; label: string; css: string }[] = [
   { id: "mesh",    label: "Mesh",    css: "radial-gradient(ellipse at 20% 20%,#a78bfa 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,#38bdf8 0%,transparent 50%),#1e1b4b" },
 ];
 
-const PRESET_AVATARS = [
-  {
-    id: "male-1", category: "Male", label: "Professional",
-    svg: (
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="50" fill="#3730a3"/>
-        <path d="M18 100 Q20 72 50 68 Q80 72 82 100Z" fill="#4f46e5"/>
-        <path d="M43 68 L47 62 L50 65 L53 62 L57 68Z" fill="#4f46e5"/>
-        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fdba74"/>
-        <circle cx="50" cy="50" r="19" fill="#fdba74"/>
-        <path d="M31 48 Q33 30 50 28 Q67 30 69 48 Q66 36 50 34 Q34 36 31 48Z" fill="#1e293b"/>
-        <ellipse cx="43.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
-        <ellipse cx="56.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
-        <path d="M45 57 Q50 61 55 57" stroke="#92400e" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    id: "male-2", category: "Male", label: "Casual",
-    svg: (
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="50" fill="#065f46"/>
-        <path d="M18 100 Q20 72 50 68 Q80 72 82 100Z" fill="#059669"/>
-        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fcd34d"/>
-        <circle cx="50" cy="50" r="19" fill="#fcd34d"/>
-        <path d="M31 47 Q34 29 50 27 Q66 29 69 47 Q60 33 50 33 Q40 33 31 47Z" fill="#78350f"/>
-        <path d="M31 47 Q33 52 32 55 Q37 45 50 44 Q63 45 68 55 Q67 52 69 47 Q60 33 50 33 Q40 33 31 47Z" fill="#92400e"/>
-        <ellipse cx="43.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
-        <ellipse cx="56.5" cy="50" rx="2.5" ry="2.5" fill="#1e293b"/>
-        <path d="M44 58 Q50 62 56 58" stroke="#92400e" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-        <path d="M40 62 Q43 64 46 63 M54 63 Q57 64 60 62" stroke="#92400e" strokeWidth="1" fill="none" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    id: "female-1", category: "Female", label: "Professional",
-    svg: (
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="50" fill="#6d28d9"/>
-        <path d="M15 100 Q18 70 50 66 Q82 70 85 100Z" fill="#7367F0"/>
-        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fca5a5"/>
-        <circle cx="50" cy="50" r="19" fill="#fca5a5"/>
-        <path d="M31 46 Q31 28 50 26 Q69 28 69 46" fill="#1e293b"/>
-        <path d="M31 46 Q29 55 30 62 Q32 56 31 50Z" fill="#1e293b"/>
-        <path d="M69 46 Q71 55 70 62 Q68 56 69 50Z" fill="#1e293b"/>
-        <path d="M30 62 Q28 72 32 80 Q38 70 31 62Z" fill="#1e293b"/>
-        <path d="M70 62 Q72 72 68 80 Q62 70 69 62Z" fill="#1e293b"/>
-        <ellipse cx="43.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
-        <ellipse cx="56.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
-        <path d="M41 46 Q44 44 47 45" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <path d="M53 45 Q56 44 59 46" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <path d="M45 57 Q50 61 55 57" stroke="#be123c" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    id: "female-2", category: "Female", label: "Casual",
-    svg: (
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="50" fill="#b45309"/>
-        <path d="M16 100 Q19 71 50 67 Q81 71 84 100Z" fill="#d97706"/>
-        <rect x="44" y="60" width="12" height="10" rx="3" fill="#fed7aa"/>
-        <circle cx="50" cy="50" r="19" fill="#fed7aa"/>
-        <circle cx="50" cy="29" r="9" fill="#b45309"/>
-        <ellipse cx="50" cy="32" rx="7" ry="5" fill="#d97706"/>
-        <path d="M41 32 Q50 24 59 32 Q57 27 50 26 Q43 27 41 32Z" fill="#92400e"/>
-        <ellipse cx="43.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
-        <ellipse cx="56.5" cy="50" rx="2.2" ry="2.5" fill="#1e293b"/>
-        <path d="M41 46 Q44 44 47 45" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <path d="M53 45 Q56 44 59 46" stroke="#1e293b" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <path d="M45 57 Q50 61 55 57" stroke="#be123c" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-        <circle cx="43" cy="52" r="1.5" fill="#fda4af" opacity="0.7"/>
-        <circle cx="57" cy="52" r="1.5" fill="#fda4af" opacity="0.7"/>
-      </svg>
-    ),
-  },
-  {
-    id: "ai-1", category: "AI", label: "Bot",
-    svg: (
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="50" fill="#0f172a"/>
-        <rect x="27" y="35" width="46" height="36" rx="8" fill="#1e293b" stroke="#7367F0" strokeWidth="1.5"/>
-        <rect x="35" y="44" width="12" height="9" rx="3" fill="#7367F0" opacity="0.9"/>
-        <rect x="53" y="44" width="12" height="9" rx="3" fill="#7367F0" opacity="0.9"/>
-        <ellipse cx="41" cy="48.5" rx="3.5" ry="3.5" fill="#a78bfa"/>
-        <ellipse cx="59" cy="48.5" rx="3.5" ry="3.5" fill="#a78bfa"/>
-        <rect x="43" y="57" width="14" height="3" rx="1.5" fill="#7367F0"/>
-        <rect x="48" y="27" width="4" height="10" rx="2" fill="#7367F0"/>
-        <circle cx="50" cy="25" r="3" fill="#a78bfa"/>
-        <rect x="23" y="47" width="6" height="3" rx="1.5" fill="#7367F0"/>
-        <rect x="71" y="47" width="6" height="3" rx="1.5" fill="#7367F0"/>
-        <path d="M35 71 Q50 78 65 71" stroke="#7367F0" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    id: "ai-2", category: "AI", label: "Flow",
-    svg: (
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="50" fill="#0c1a2e"/>
-        <circle cx="50" cy="50" r="8" fill="#06b6d4" opacity="0.9"/>
-        <circle cx="25" cy="35" r="5" fill="#22d3ee" opacity="0.7"/>
-        <circle cx="75" cy="35" r="5" fill="#22d3ee" opacity="0.7"/>
-        <circle cx="25" cy="65" r="5" fill="#22d3ee" opacity="0.7"/>
-        <circle cx="75" cy="65" r="5" fill="#22d3ee" opacity="0.7"/>
-        <circle cx="50" cy="20" r="4" fill="#67e8f9" opacity="0.6"/>
-        <circle cx="50" cy="80" r="4" fill="#67e8f9" opacity="0.6"/>
-        <line x1="50" y1="42" x2="50" y2="24" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
-        <line x1="50" y1="58" x2="50" y2="76" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
-        <line x1="43" y1="45" x2="29" y2="37" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
-        <line x1="57" y1="45" x2="71" y2="37" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
-        <line x1="43" y1="55" x2="29" y2="63" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
-        <line x1="57" y1="55" x2="71" y2="63" stroke="#06b6d4" strokeWidth="1.2" opacity="0.6"/>
-        <circle cx="50" cy="50" r="14" stroke="#06b6d4" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.4"/>
-        <circle cx="50" cy="50" r="25" stroke="#22d3ee" strokeWidth="0.5" strokeDasharray="2 4" opacity="0.3"/>
-      </svg>
-    ),
-  },
-];
-
-function getInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-}
-
-function InitialsAvatar({ initials }: { initials: string }) {
-  return (
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="50" fill="#7367F0"/>
-      <text
-        x="50" y="50"
-        dominantBaseline="central"
-        textAnchor="middle"
-        fontSize="32"
-        fontWeight="700"
-        fontFamily="Inter, system-ui, sans-serif"
-        fill="white"
-        letterSpacing="1"
-      >
-        {initials}
-      </text>
-    </svg>
-  );
-}
 
 function AvatarPickerModal({
   current,
@@ -744,6 +676,82 @@ function BgImagePicker({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
+const FONT_OPTIONS: { value: PersonaState["fontFamily"]; label: string; stack: string; cls: string }[] = [
+  { value: "inter",        label: "Inter",         stack: "var(--font-inter), Inter, system-ui, sans-serif",               cls: "font-preview-inter" },
+  { value: "public-sans",  label: "Public Sans",   stack: "var(--font-public-sans), 'Public Sans', system-ui, sans-serif", cls: "font-preview-public-sans" },
+  { value: "nunito",       label: "Nunito",        stack: "var(--font-nunito), Nunito, system-ui, sans-serif",             cls: "font-preview-nunito" },
+  { value: "merriweather", label: "Merriweather",  stack: "var(--font-merriweather), Merriweather, Georgia, serif",        cls: "font-preview-merriweather" },
+  { value: "roboto",       label: "Roboto",        stack: "var(--font-roboto), Roboto, system-ui, sans-serif",             cls: "font-preview-roboto" },
+];
+
+function FontSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const active = FONT_OPTIONS.find(f => f.value === value) ?? FONT_OPTIONS[0];
+
+  function openDrop() {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        dropRef.current && !dropRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
+        onClick={() => open ? setOpen(false) : openDrop()}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] hover:border-violet-400 transition-colors"
+      >
+        <span className={`text-sm text-[#262626] dark:text-[#C8D8EE] ${active.cls}`}>
+          {active.label}
+        </span>
+        <svg className={`shrink-0 text-[#A3A3A3] transition-transform duration-150 ${open ? "rotate-180" : ""}`} width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div
+          ref={dropRef}
+          className="fixed z-50 bg-white dark:bg-[#111D30] border border-[#E5E5E5] dark:border-[#1E3050] rounded-xl shadow-lg overflow-hidden"
+          style={{ top: dropPos.top, left: dropPos.left, width: dropPos.width }}
+        >
+          {FONT_OPTIONS.map(font => (
+            <button
+              key={font.value}
+              onClick={() => { onChange(font.value); setOpen(false); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors ${font.cls}
+                ${font.value === value
+                  ? "bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400"
+                  : "text-[#404040] dark:text-[#C8D8EE] hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050]"
+                }`}
+            >
+              {font.label}
+              {font.value === value && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GeneralSettings({
   state,
   onChange,
@@ -944,29 +952,41 @@ export default function GeneralSettings({
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Style</span>
               <InfoIcon />
             </div>
-            <div className="flex flex-col gap-2.5">
+            <div className="grid grid-cols-3 gap-3">
               {(["sharp", "soft", "round"] as const).map((style) => {
                 const active = state.agentStyle === style;
                 const label = style.charAt(0).toUpperCase() + style.slice(1);
-                const radius = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-xl" : "rounded-full";
+                const btnR = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-lg" : "rounded-full";
+                const cardR = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-xl" : "rounded-2xl";
+                const bubbleR = style === "sharp" ? "rounded-sm" : style === "soft" ? "rounded-xl" : "rounded-full";
+                const desc = style === "sharp" ? "Flat, geometric edges" : style === "soft" ? "Balanced, modern feel" : "Pill-shaped, friendly";
                 return (
-                  <label
+                  <button
                     key={style}
-                    className="flex items-center gap-2.5 cursor-pointer group"
                     onClick={() => onChange({ agentStyle: style })}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all duration-150 cursor-pointer
+                      ${active
+                        ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30"
+                        : "border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] hover:border-violet-300 dark:hover:border-violet-700"
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                      ${active ? "border-violet-600 bg-white dark:bg-[#111D30]" : "border-gray-300 dark:border-[#2A4060] bg-white dark:bg-[#111D30]"}`}
-                    >
-                      {active && <div className="w-2 h-2 rounded-full bg-violet-600" />}
+                    {/* Mini preview */}
+                    <div className="w-full flex flex-col gap-1 px-0.5">
+                      <div className={`self-end h-3 bg-violet-400/70 dark:bg-violet-500/50 ${bubbleR}`} style={{ width: "65%" }} />
+                      <div className={`self-start h-3 bg-[#E5E5E5] dark:bg-[#1E3050] ${bubbleR}`} style={{ width: "50%" }} />
+                      <div className={`mt-0.5 h-4 w-full bg-[#F5F5F5] dark:bg-[#111D30] border border-[#E5E5E5] dark:border-[#1E3050] flex items-center justify-end pr-0.5 ${cardR}`}>
+                        <div className={`w-3 h-3 bg-violet-500/70 flex items-center justify-center shrink-0 ${btnR}`}>
+                          <svg width="6" height="6" viewBox="0 0 10 10" fill="white"><path d="M1 9L9 5 1 1v3l5 1-5 1v3z"/></svg>
+                        </div>
+                      </div>
                     </div>
-                    <span className={`text-sm transition-colors flex-1
-                      ${active ? "text-[#262626] dark:text-[#C8D8EE] font-medium" : "text-[#737373] dark:text-[#7A9BBF] group-hover:text-[#404040] dark:group-hover:text-[#C8D8EE]"}`}
-                    >
-                      {label}
-                    </span>
-                    <div className={`w-14 h-7 bg-blue-100 dark:bg-blue-900/30 shrink-0 ${radius}`} />
-                  </label>
+                    <div className="flex flex-col items-center gap-0 text-center">
+                      <span className={`text-[11px] font-medium transition-colors ${active ? "text-violet-600 dark:text-violet-400" : "text-[#404040] dark:text-[#C8D8EE]"}`}>
+                        {label}
+                      </span>
+                      <span className="text-[9px] text-[#A3A3A3] dark:text-[#5A7A9A] leading-tight">{desc}</span>
+                    </div>
+                  </button>
                 );
               })}
             </div>
@@ -978,14 +998,7 @@ export default function GeneralSettings({
               <SettingsIcon />
               <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Font Family</span>
             </div>
-            <RadioGroup
-              options={[
-                { value: "inter", label: "Inter" },
-                { value: "public-sans", label: "Public Sans" },
-              ]}
-              value={state.fontFamily}
-              onChange={(v) => onChange({ fontFamily: v })}
-            />
+            <FontSelect value={state.fontFamily} onChange={(v) => onChange({ fontFamily: v as PersonaState["fontFamily"] })} />
           </div>
 
         </div>

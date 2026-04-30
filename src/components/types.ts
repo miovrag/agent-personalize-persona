@@ -77,13 +77,14 @@ export interface PersonaState {
   preventPdfDownload: boolean;
   allowKnowledgeBaseQueries: boolean;
   enableNumericSearch: boolean;
+  typingIndicatorStyle: "dots" | "wave" | "pulse" | "bars";
   // General tab
   agentRole: string;
   agentAvatarUrl: string;
   agentColorScheme: "adaptive" | "legacy";
   agentColor: string;
   agentStyle: "sharp" | "soft" | "round";
-  fontFamily: "inter" | "public-sans";
+  fontFamily: "inter" | "public-sans" | "nunito" | "merriweather" | "roboto";
   backgroundType: "image" | "color";
   backgroundColor: string;
   backgroundImageUrl: string;

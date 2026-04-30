@@ -13,17 +13,17 @@ export default function Home() {
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 xl:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar — drawer on mobile/tablet, collapsible on desktop */}
       <div
-        className={`fixed xl:static inset-y-0 left-0 z-50 xl:z-auto shrink-0 xl:overflow-hidden
+        className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-auto shrink-0 lg:overflow-hidden
           transition-[width,transform] duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"}
-          ${sidebarCollapsed ? "xl:w-0" : "xl:w-[268px]"}`}
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${sidebarCollapsed ? "lg:w-0" : "lg:w-[268px]"}`}
       >
         <Sidebar
           onClose={() => setSidebarOpen(false)}

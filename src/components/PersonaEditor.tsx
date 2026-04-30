@@ -5,7 +5,7 @@ import type { PersonaState } from "./types";
 import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
 import AdvancedToggle from "./AdvancedToggle";
 import PresetManager from "./PresetManager";
-import CustomGPTWidget from "./CustomGPTWidget";
+import LivePreview from "./LivePreview";
 import BuilderChat from "./BuilderChat";
 import ThemeToggle from "./ThemeToggle";
 import GeneralSettings from "./GeneralSettings";
@@ -89,6 +89,7 @@ const DEFAULT_STATE: PersonaState = {
   preventPdfDownload: false,
   allowKnowledgeBaseQueries: true,
   enableNumericSearch: true,
+  typingIndicatorStyle: "dots",
   agentRole: "Customer Support",
   agentAvatarUrl: "",
   agentColorScheme: "adaptive",
@@ -214,7 +215,7 @@ export default function PersonaEditor({
           {/* Hamburger — mobile only */}
           <button
             onClick={onMenuClick}
-            className="xl:hidden shrink-0 p-1.5 -ml-1 rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] text-[#525252] dark:text-[#7A9BBF] transition-colors"
+            className="lg:hidden shrink-0 p-1.5 -ml-1 rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] text-[#525252] dark:text-[#7A9BBF] transition-colors"
             aria-label="Open menu"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -225,7 +226,7 @@ export default function PersonaEditor({
           {sidebarCollapsed && (
             <button
               onClick={onExpandSidebar}
-              className="hidden xl:block shrink-0 p-1 -ml-1 rounded hover:opacity-70 transition-opacity"
+              className="hidden lg:block shrink-0 p-1 -ml-1 rounded hover:opacity-70 transition-opacity"
               aria-label="Expand sidebar"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -282,7 +283,7 @@ export default function PersonaEditor({
       </div>
 
       {/* Mobile Settings / Preview switcher */}
-      <div className="xl:hidden flex shrink-0 border-b border-[#E5E5E5] dark:border-[#1E3050]">
+      <div className="lg:hidden flex shrink-0 border-b border-[#E5E5E5] dark:border-[#1E3050]">
         {(["settings", "preview"] as const).map((view) => (
           <button
             key={view}
@@ -303,7 +304,7 @@ export default function PersonaEditor({
 
         {/* Left panel */}
         <div className={`flex-col flex-1 bg-[#FAFAFA] dark:bg-[#0B1426] overflow-hidden
-          ${mobileView === "settings" ? "flex" : "hidden"} xl:flex`}>
+          ${mobileView === "settings" ? "flex" : "hidden"} lg:flex`}>
 
           {/* Mode toggle — centered below tab bar */}
           <div className="shrink-0 flex justify-center px-6 py-3">
@@ -403,10 +404,21 @@ export default function PersonaEditor({
           </div>
 
         {/* Right panel — preview */}
-        <div className={`flex-col w-full xl:w-[420px] shrink-0 border-l border-[#E5E5E5] dark:border-[#1E3050] bg-[#FAFAFA] dark:bg-[#0B1426] min-h-0
-          ${mobileView === "preview" ? "flex" : "hidden"} xl:flex`}>
+        <div className={`flex-col w-full lg:w-[380px] shrink-0 border-l border-[#E5E5E5] dark:border-[#1E3050] bg-[#FAFAFA] dark:bg-[#0B1426] min-h-0
+          ${mobileView === "preview" ? "flex" : "hidden"} lg:flex`}>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <CustomGPTWidget reloadKey={widgetKey} />
+            <LivePreview
+              agentName={state.agentName}
+              agentColor={state.agentColor}
+              agentStyle={state.agentStyle}
+              agentAvatarUrl={state.agentAvatarUrl}
+              fontFamily={state.fontFamily}
+              backgroundType={state.backgroundType}
+              backgroundColor={state.backgroundColor}
+              backgroundImageUrl={state.backgroundImageUrl}
+              typingIndicatorStyle={state.typingIndicatorStyle}
+              onTypingIndicatorChange={(v) => updateState({ typingIndicatorStyle: v })}
+            />
           </div>
         </div>
 
