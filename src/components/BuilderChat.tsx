@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import type { PersonaState } from "./types";
 import { generateInstruction } from "./generateInstruction";
 import { LoadingIndicatorSection } from "./ConversationSettings";
-import { AgentStyleSection, FontFamilySection, AgentColorSection, BackgroundSection } from "./GeneralSettings";
+import { AgentStyleSection, FontFamilySection, AgentColorSection, BackgroundSection, AvatarSection } from "./GeneralSettings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,7 +32,8 @@ type MessageWidget =
   | { type: "agent-style" }
   | { type: "font-family" }
   | { type: "agent-color" }
-  | { type: "background" };
+  | { type: "background" }
+  | { type: "avatar" };
 
 interface Message {
   id: string;
@@ -319,6 +320,11 @@ function detectWidgetIntercept(text: string): { reply: string; widget: MessageWi
   // Background — browse intent (no specific preset/color named)
   if (/\bbackground\b/i.test(text) && !BG_SPECIFIC.test(text)) {
     return { reply: "", widget: { type: "background" } };
+  }
+
+  // Avatar — browse intent: mentions avatar/profile/icon without uploading a file
+  if (/\b(avatar|profile[\s-]?(pic(ture)?|image|photo)?|agent[\s-]?(icon|image|photo)|headshot|icon)\b/i.test(text)) {
+    return { reply: "", widget: { type: "avatar" } };
   }
 
   // Output style — browse intent (keep as option cards, no dedicated component yet)
@@ -879,6 +885,9 @@ export default function BuilderChat({ state, onApply }: Props) {
                 )}
                 {msg.widget.type === "background" && (
                   <div className="mt-2 w-full"><BackgroundSection state={state} onChange={onApply} /></div>
+                )}
+                {msg.widget.type === "avatar" && (
+                  <div className="mt-2 w-full"><AvatarSection state={state} onChange={onApply} /></div>
                 )}
                 {msg.widget.type === "options" && msg.widget.options.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2 max-w-full">

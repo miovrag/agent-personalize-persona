@@ -885,6 +885,76 @@ export function BackgroundSection({ state, onChange }: SectionProps) {
   );
 }
 
+export function AvatarSection({ state, onChange }: SectionProps) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onChange({ agentAvatarUrl: URL.createObjectURL(file) });
+  };
+
+  const presetId = state.agentAvatarUrl?.startsWith("preset:") ? state.agentAvatarUrl.slice(7) : null;
+  const presetAvatar = presetId && presetId !== "initials" ? PRESET_AVATARS.find((a) => a.id === presetId) : null;
+  const isInitialsAvatar = presetId === "initials";
+
+  return (
+    <>
+      <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <SettingsIcon />
+          <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Agent Avatar</span>
+          <InfoIcon tooltip="Displayed in the chat header and conversation bubbles" />
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setAvatarModalOpen(true)}
+            className="relative w-14 h-14 rounded-full border-2 border-[#E5E5E5] dark:border-[#1E3050] overflow-hidden bg-[#F5F5F5] dark:bg-[#162238] shrink-0 flex items-center justify-center group hover:border-violet-400 transition-colors"
+          >
+            {isInitialsAvatar ? (
+              <div className="w-full h-full"><InitialsAvatar initials={getInitials(state.agentName)} /></div>
+            ) : presetAvatar ? (
+              <div className="w-full h-full">{presetAvatar.svg}</div>
+            ) : state.agentAvatarUrl ? (
+              <img src={state.agentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#D4D4D4] dark:text-[#2A4060]">
+                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            )}
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </button>
+          <div className="flex-1">
+            <p className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] mb-2">Upload square image only. Allowed are JPG, GIF or PNG up to 800 Kb.</p>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] text-[#525252] dark:text-[#C8D8EE] hover:bg-[#FAFAFA] dark:hover:bg-[#1E3050] transition-colors flex items-center gap-1.5"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 4l3-3 3 3M1 9v1.5A.5.5 0 001.5 11h9a.5.5 0 00.5-.5V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Upload image
+            </button>
+            <input ref={fileRef} type="file" accept=".jpg,.jpeg,.gif,.png" className="sr-only" onChange={handleAvatarChange} />
+          </div>
+        </div>
+      </div>
+      {avatarModalOpen && (
+        <AvatarPickerModal
+          current={state.agentAvatarUrl ?? ""}
+          agentName={state.agentName}
+          onSelect={(id) => onChange({ agentAvatarUrl: `preset:${id}` })}
+          onClose={() => setAvatarModalOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
 export default function GeneralSettings({
   state,
   onChange,
