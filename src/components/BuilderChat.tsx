@@ -116,6 +116,16 @@ const SUGGESTION_META: Record<string, { icon: string; category: SuggestionCatego
   "Proactive suggestions":    { icon: "→",  category: "behavior"   },
   "Summarise at end":         { icon: "≡",  category: "behavior"   },
   "Confirm before acting":    { icon: "✓",  category: "behavior"   },
+  "Always use step-by-step":  { icon: "1→", category: "behavior"   },
+  "Mention responsible institution": { icon: "⌂", category: "behavior" },
+  "Escalate to human if unsure": { icon: "↑", category: "behavior" },
+  "Avoid opinions":           { icon: "○",  category: "behavior"   },
+  "Offer follow-up questions": { icon: "⤷", category: "behavior"   },
+  "Acknowledge limitations":  { icon: "!",  category: "behavior"   },
+  "Repeat key info at end":   { icon: "↩",  category: "behavior"   },
+  "Use examples always":      { icon: "◇",  category: "behavior"   },
+  "Stay on topic strictly":   { icon: "⊕",  category: "behavior"   },
+  "Never assume context":     { icon: "≠",  category: "behavior"   },
 
   // Tone — taxonomy Q2 data
   "Professional tone":        { icon: "Aa", category: "tone"       },
