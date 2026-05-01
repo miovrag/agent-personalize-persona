@@ -242,6 +242,7 @@ export default function PersonaEditor({
               </svg>
             </button>
           )}
+          <ModeToggle chatMode={chatMode} onChange={(m) => { setChatMode(m); if (m === "settings") setSettingsTab("general"); }} />
         </div>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           {isDirty && saveState === "idle" && (
@@ -306,13 +307,8 @@ export default function PersonaEditor({
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left panel */}
-        <div className={`flex-col flex-1 bg-[#FAFAFA] dark:bg-[#0B1426] overflow-hidden
+        <div className={`flex-col flex-1 bg-white dark:bg-[#0B1426] overflow-hidden
           ${mobileView === "settings" ? "flex" : "hidden"} lg:flex`}>
-
-          {/* Mode toggle — centered below tab bar */}
-          <div className="shrink-0 flex justify-center px-6 py-3">
-            <ModeToggle chatMode={chatMode} onChange={(m) => { setChatMode(m); if (m === "settings") setSettingsTab("general"); }} />
-          </div>
 
           {/* Settings sub-tabs — shown when in settings mode */}
           {chatMode === "settings" && (
