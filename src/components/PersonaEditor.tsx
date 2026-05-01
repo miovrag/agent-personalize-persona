@@ -242,10 +242,6 @@ export default function PersonaEditor({
               </svg>
             </button>
           )}
-          <div className="min-w-0">
-            <h1 className="heading-h5 mb-0 lg:mb-1 truncate">{state.agentName}</h1>
-            <p className="hidden sm:block text-sm text-[#A3A3A3] dark:text-[#7A9BBF]">Settings here apply to all deployment options.</p>
-          </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           {isDirty && saveState === "idle" && (
