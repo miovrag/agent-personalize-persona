@@ -242,7 +242,10 @@ export default function PersonaEditor({
               </svg>
             </button>
           )}
-          <ModeToggle chatMode={chatMode} onChange={(m) => { setChatMode(m); if (m === "settings") setSettingsTab("general"); }} />
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A3] dark:text-[#7A9BBF] leading-none">Personalize</span>
+            <ModeToggle chatMode={chatMode} onChange={(m) => { setChatMode(m); if (m === "settings") setSettingsTab("general"); }} />
+          </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           {isDirty && saveState === "idle" && (
