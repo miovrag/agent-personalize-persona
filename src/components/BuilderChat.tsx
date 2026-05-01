@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { PersonaState } from "./types";
 import { generateInstruction } from "./generateInstruction";
-import { LoadingIndicatorSection } from "./ConversationSettings";
-import { AgentStyleSection, FontFamilySection, AgentColorSection, BackgroundSection, AvatarSection } from "./GeneralSettings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,25 +14,6 @@ interface Attachment {
   mimeType: string;
 }
 
-interface WidgetOption {
-  label: string;
-  icon?: string;
-  description?: string;
-  message: string;
-  patch?: Partial<PersonaState>;
-  stateKey?: keyof PersonaState;
-  stateValue?: unknown;
-}
-
-type MessageWidget =
-  | { type: "options"; options: WidgetOption[] }
-  | { type: "loading-indicator" }
-  | { type: "agent-style" }
-  | { type: "font-family" }
-  | { type: "agent-color" }
-  | { type: "background" }
-  | { type: "avatar" };
-
 interface Message {
   id: string;
   role: "user" | "assistant" | "error";
@@ -42,7 +21,6 @@ interface Message {
   diff?: DiffEntry[];
   retryText?: string;
   attachments?: Attachment[];
-  widget?: MessageWidget;
 }
 
 interface Props {
@@ -265,76 +243,6 @@ const STYLE_CHIPS: {
   { group: "font",       label: "Roboto",         message: "Switch font to Roboto",            cls: "font-preview-roboto",       isActive: (s) => s.fontFamily === "roboto" },
 ];
 
-// ─── Widget definitions ───────────────────────────────────────────────────────
-
-
-const WIDGET_OUTPUT_STYLE: MessageWidget = {
-  type: "options",
-  options: [
-    { label: "Bullet points", icon: "≡",  description: "Scannable lists",    message: "Set output style to bullet points", patch: { outputStyle: "bullets" },     stateKey: "outputStyle", stateValue: "bullets" },
-    { label: "Short steps",   icon: "1→", description: "Numbered steps",     message: "Set output style to short steps",   patch: { outputStyle: "short-steps" }, stateKey: "outputStyle", stateValue: "short-steps" },
-    { label: "Step guide",    icon: "⋮",  description: "Steps with details", message: "Set output style to step guide",    patch: { outputStyle: "step-guide" },  stateKey: "outputStyle", stateValue: "step-guide" },
-    { label: "Detailed",      icon: "≣",  description: "Full explanations",  message: "Set output style to detailed",      patch: { outputStyle: "detailed" },    stateKey: "outputStyle", stateValue: "detailed" },
-    { label: "Summary",       icon: "◎",  description: "Brief + key points", message: "Set output style to summary",       patch: { outputStyle: "summary" },     stateKey: "outputStyle", stateValue: "summary" },
-  ],
-};
-
-const FONT_SPECIFIC    = /\b(inter|public[\s-]sans|nunito|merriweather|roboto)\b/i;
-const CORNER_SPECIFIC  = /\b(sharp|soft|round(ed)?|pill)\b/i;
-const COLOR_SPECIFIC   = /#[0-9a-fA-F]{3,6}\b|rgba?\(|hsl\(|\b(red|blue|green|black|white|purple|orange|yellow|pink|teal|cyan|navy|maroon|gray|grey)\b/i;
-const BG_SPECIFIC      = /\b(ocean|aurora|dusk|carbon|forest|golden|slate|mesh|chalk|mist|blush|rose|light|dark)\b/i;
-const OUTPUT_SPECIFIC  = /\b(bullet|step([\s-]?guide)?|detailed|summary|short)\b/i;
-
-function detectWidgetIntercept(text: string): { reply: string; widget: MessageWidget } | null {
-  // Loading indicator — all phrasings → component
-  if (
-    /\bloading[\s-]*indicator\b/i.test(text) ||
-    /\b(change|update|set|switch|show|edit|open)\b.{0,30}\b(load(er|ing)(\s*(animation|indicator|style))?)\b/i.test(text) ||
-    /\bloade?r?\b.{0,20}\b(change|switch|update)\b/i.test(text) ||
-    /\btyping\s*dot(s)?\b/i.test(text)
-  ) {
-    return { reply: "", widget: { type: "loading-indicator" } };
-  }
-
-  // Font — browse intent: mentions font/typeface but no specific font named
-  if (/\b(font|typeface|typography)\b/i.test(text) && !FONT_SPECIFIC.test(text)) {
-    return { reply: "", widget: { type: "font-family" } };
-  }
-
-  // Corner style / agent style — browse intent
-  if (/\b(corner(s)?|agent[\s-]style|border[\s-]?radius)\b/i.test(text) && !CORNER_SPECIFIC.test(text)) {
-    return { reply: "", widget: { type: "agent-style" } };
-  }
-
-  // Primary color — browse intent (no specific hex or named color), skip if "background" is in text
-  if (
-    (
-      /\b(accent[\s-]?color|primary[\s-]?color|brand[\s-]?color|agent[\s-]?color|color[\s-]?scheme|theme[\s-]?color|chat[\s-]?color)\b/i.test(text) ||
-      (/\b(color|colour)\b/i.test(text) && !/\bbackground\b/i.test(text))
-    ) &&
-    !COLOR_SPECIFIC.test(text)
-  ) {
-    return { reply: "", widget: { type: "agent-color" } };
-  }
-
-  // Background — browse intent (no specific preset/color named)
-  if (/\bbackground\b/i.test(text) && !BG_SPECIFIC.test(text)) {
-    return { reply: "", widget: { type: "background" } };
-  }
-
-  // Avatar — browse intent: mentions avatar/profile/icon without uploading a file
-  if (/\b(avatar|profile[\s-]?(pic(ture)?|image|photo)?|agent[\s-]?(icon|image|photo)|headshot|icon)\b/i.test(text)) {
-    return { reply: "", widget: { type: "avatar" } };
-  }
-
-  // Output style — browse intent (keep as option cards, no dedicated component yet)
-  if (/\b(output|response)\s*(style|format)\b/i.test(text) && !OUTPUT_SPECIFIC.test(text)) {
-    const w = WIDGET_OUTPUT_STYLE as Extract<MessageWidget, { type: "options" }>;
-    return { reply: "", widget: { type: "options", options: w.options } };
-  }
-
-  return null;
-}
 
 // ─── Diff helpers ─────────────────────────────────────────────────────────────
 
@@ -556,29 +464,6 @@ export default function BuilderChat({ state, onApply }: Props) {
     setCanUndo(false);
   }
 
-  function handleWidgetOption(opt: WidgetOption) {
-    if (!opt.patch) {
-      // No direct patch — fall through to API via sendText
-      sendText(opt.message);
-      return;
-    }
-    setFollowUpQuestion(null);
-    setFollowUpSuggestions(null);
-    prevStateRef.current = { ...state };
-    setCanUndo(true);
-    const newState: PersonaState = { ...state, ...opt.patch, additionalInstructions: "" };
-    const additionalInstructions = generateInstruction(newState);
-    onApply({ ...opt.patch, additionalInstructions });
-    const userMsg: Message = { id: `${Date.now()}-u`, role: "user", text: opt.label };
-    const assistantMsg: Message = {
-      id: `${Date.now() + 1}-a`,
-      role: "assistant",
-      text: `Done — switched to ${opt.label}.`,
-      diff: [{ label: opt.label, type: "change" as const }],
-    };
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
-  }
-
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     const attachments = files.map(f => ({
@@ -710,16 +595,6 @@ export default function BuilderChat({ state, onApply }: Props) {
       return;
     }
 
-    // Widget intercept — instant response for known multi-option settings
-    const widgetIntercept = detectWidgetIntercept(trimmed);
-    if (widgetIntercept) {
-      setMessages((prev) => [
-        ...prev,
-        { id: `${Date.now()}-a`, role: "assistant", text: widgetIntercept.reply, widget: widgetIntercept.widget },
-      ]);
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -756,7 +631,6 @@ export default function BuilderChat({ state, onApply }: Props) {
         role: "assistant",
         text: data.reply,
         diff: diff.length > 0 ? diff : undefined,
-        widget: data.widget ?? undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
@@ -883,65 +757,6 @@ export default function BuilderChat({ state, onApply }: Props) {
                 </button>
               )}
             </div>}
-
-            {/* Option widget — rendered below bubble for assistant messages */}
-            {msg.widget && msg.role === "assistant" && (
-              <>
-                {msg.widget.type === "loading-indicator" && (
-                  <div className="mt-2 w-full"><LoadingIndicatorSection state={state} onChange={onApply} /></div>
-                )}
-                {msg.widget.type === "agent-style" && (
-                  <div className="mt-2 w-full"><AgentStyleSection state={state} onChange={onApply} /></div>
-                )}
-                {msg.widget.type === "font-family" && (
-                  <div className="mt-2 w-full"><FontFamilySection state={state} onChange={onApply} /></div>
-                )}
-                {msg.widget.type === "agent-color" && (
-                  <div className="mt-2 w-full"><AgentColorSection state={state} onChange={onApply} /></div>
-                )}
-                {msg.widget.type === "background" && (
-                  <div className="mt-2 w-full"><BackgroundSection state={state} onChange={onApply} /></div>
-                )}
-                {msg.widget.type === "avatar" && (
-                  <div className="mt-2 w-full"><AvatarSection state={state} onChange={onApply} /></div>
-                )}
-                {msg.widget.type === "options" && msg.widget.options.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2 max-w-full">
-                    {msg.widget.options.map((opt) => {
-                      const isActive = opt.stateKey !== undefined && opt.stateValue !== undefined
-                        && (state[opt.stateKey] as unknown) === opt.stateValue;
-                      return (
-                        <button
-                          key={opt.label}
-                          onClick={() => handleWidgetOption(opt)}
-                          className={`group/opt flex flex-col gap-0.5 px-3 py-2.5 ${styleR.chip} border transition-all duration-150 text-left ${
-                            isActive
-                              ? "border-violet-500 bg-violet-50 dark:bg-violet-900/30 ring-1 ring-violet-400/30"
-                              : "border-[#E5E5E5] dark:border-[#1E3050] bg-[#FAFAFA] dark:bg-[#0B1426] hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/80 dark:hover:bg-violet-900/20"
-                          }`}
-                          style={{ minWidth: "74px", maxWidth: "128px" }}
-                        >
-                          {opt.icon && (
-                            <span className={`text-sm leading-none ${isActive ? "text-violet-500 dark:text-violet-400" : "text-[#A3A3A3] dark:text-[#7A9BBF] group-hover/opt:text-violet-400 dark:group-hover/opt:text-violet-400"} transition-colors`}>
-                              {opt.icon}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-1">
-                            {isActive && <span className="text-[9px] text-violet-500">✓</span>}
-                            <span className={`text-xs font-semibold leading-tight ${isActive ? "text-violet-700 dark:text-violet-300" : "text-[#262626] dark:text-[#C8D8EE]"}`}>
-                              {opt.label}
-                            </span>
-                          </div>
-                          {opt.description && (
-                            <span className="text-[10px] text-[#A3A3A3] dark:text-[#7A9BBF] leading-tight">{opt.description}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
 
             {/* Inline diff tags — read-only, collapsible */}
             {msg.diff && msg.diff.length > 0 && (
