@@ -70,8 +70,7 @@ The user's current agent configuration (PersonaState) is provided in each messag
 {
   "reply": "Conversational confirmation of what changed, 1-2 sentences max.",
   "patch": { ...only the fields that should change, or null if nothing changed },
-  "followUp": "A single smart follow-up question or suggestion, or null",
-  "nextSuggestions": ["short label 1", "short label 2", "short label 3"]
+  "followUp": "A single smart follow-up question or suggestion, or null"
 }
 
 ## Rules:
@@ -80,7 +79,6 @@ The user's current agent configuration (PersonaState) is provided in each messag
 - styles: always return the full updated array (add or remove as requested)
 - guardrails: always return the full updated array
 - behaviorToggles: always return the full updated array
-- nextSuggestions: exactly 3 short action labels (5 words max each) that are DIRECT answers or follow-on choices to the followUp question. If followUp asks "Would you like X or Y?", nextSuggestions should be ["Yes, do X", "Do Y instead", "Skip for now"] or similar. They must feel like button answers to the followUp — not unrelated generic tips.
 - If the user's request is unclear or impossible, set patch to null and explain in reply
 - Never make up values. Only use values from the schema.
 - Keep reply friendly and specific: say exactly what changed.

@@ -648,12 +648,10 @@ export default function BuilderChat({ state, onApply }: Props) {
       const patchKeys = data.patch ? Object.keys(data.patch) : [];
       const isBehavioral = !data.patch || patchKeys.some(k => BEHAVIORAL_KEYS.has(k));
       if (data.followUp && isBehavioral) setFollowUpQuestion(data.followUp);
-      const aiSuggestions: string[] = data.nextSuggestions ?? [];
       const settingsSuggestions = data.patch
         ? relatedSettingsSuggestions(data.patch, state)
         : [];
-      const merged = [...new Set([...aiSuggestions, ...settingsSuggestions])].slice(0, 4);
-      if (merged.length) setFollowUpSuggestions(merged);
+      if (settingsSuggestions.length) setFollowUpSuggestions(settingsSuggestions);
     } catch {
       setMessages((prev) => [
         ...prev,
