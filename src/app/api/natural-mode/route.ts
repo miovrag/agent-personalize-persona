@@ -83,7 +83,8 @@ The user's current agent configuration (PersonaState) is provided in each messag
 - nextSuggestions: exactly 3 short action labels (5 words max each) that are DIRECT answers or follow-on choices to the followUp question. If followUp asks "Would you like X or Y?", nextSuggestions should be ["Yes, do X", "Do Y instead", "Skip for now"] or similar. They must feel like button answers to the followUp — not unrelated generic tips.
 - If the user's request is unclear or impossible, set patch to null and explain in reply
 - Never make up values. Only use values from the schema.
-- Keep reply friendly and specific: say exactly what changed.`;
+- Keep reply friendly and specific: say exactly what changed.
+- followUp: only set to a non-null string when the change touches behavioral/content fields (mission, audience, role, tone, guardrails, styles, boundaries, behaviorToggles) AND a genuine clarifying question would help the user go further. For all visual/discrete changes (agentStyle, fontFamily, agentColor, backgroundColor, backgroundImageUrl, backgroundType, agentColorScheme, loadingIndicator, agentAvatarUrl, outputStyle, agentName) set followUp to null — those choices are self-contained.`;
 
 async function callClaude(userMessage: string, retries = 2, delayMs = 800) {
   for (let attempt = 0; attempt <= retries; attempt++) {
