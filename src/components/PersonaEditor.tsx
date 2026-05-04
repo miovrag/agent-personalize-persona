@@ -131,9 +131,33 @@ export default function PersonaEditor({
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [publishConfirm, setPublishConfirm] = useState(false);
   const lastInstructionRef = useRef<{ instruction: string; questions: string[] } | null>(null);
-  const [chatMode, setChatMode] = useState<"builder" | "settings">("builder");
   const [settingsTab, setSettingsTab] = useState<"general" | "persona" | "conversation" | "citations" | "intelligence" | "advanced" | "security">("general");
   const [mobileView, setMobileView] = useState<"settings" | "preview">("settings");
+  const [rightView, setRightView] = useState<"preview" | "instructions">("preview");
+  const [rightWidth, setRightWidth] = useState(380);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(380);
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!isDragging.current) return;
+      const delta = dragStartX.current - e.clientX;
+      setRightWidth(Math.max(280, Math.min(720, dragStartWidth.current + delta)));
+    }
+    function onMouseUp() {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -242,10 +266,7 @@ export default function PersonaEditor({
               </svg>
             </button>
           )}
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A3] dark:text-[#7A9BBF] leading-none">Personalize</span>
-            <ModeToggle chatMode={chatMode} onChange={(m) => { setChatMode(m); if (m === "settings") setSettingsTab("general"); }} />
-          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A3] dark:text-[#7A9BBF] leading-none">Personalize</span>
         </div>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           {isDirty && saveState === "idle" && (
@@ -254,8 +275,6 @@ export default function PersonaEditor({
               Unsaved changes
             </span>
           )}
-          <ThemeToggle />
-          <PresetManager currentState={state} onLoad={handleLoadPreset} />
           {publishConfirm ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-red-500 font-medium hidden sm:block">No configuration — publish anyway?</span>
@@ -313,34 +332,25 @@ export default function PersonaEditor({
         <div className={`flex-col flex-1 bg-white dark:bg-[#0B1426] overflow-hidden
           ${mobileView === "settings" ? "flex" : "hidden"} lg:flex`}>
 
-          {/* Settings sub-tabs — shown when in settings mode */}
-          {chatMode === "settings" && (
-            <div className="shrink-0 flex border-b border-[#E5E5E5] dark:border-[#1E3050]">
-              {(["general","persona","conversation","citations","intelligence","advanced","security"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSettingsTab(tab)}
-                  className={`flex-1 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
-                    ${settingsTab === tab
-                      ? "border-violet-600 text-violet-700 dark:text-violet-400"
-                      : "border-transparent text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
-                    }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Instructions — always mounted, hidden when not active */}
-          <div className={`flex-1 flex-col overflow-hidden ${chatMode === "builder" ? "flex" : "hidden"}`}>
-            <div className="flex-1 flex flex-col overflow-hidden w-full max-w-[640px] mx-auto">
-              <BuilderChat state={state} onApply={(patch) => updateState(patch)} />
-            </div>
+          {/* Settings tabs — always visible */}
+          <div className="shrink-0 flex border-b border-[#E5E5E5] dark:border-[#1E3050]">
+            {(["general","persona","conversation","citations","intelligence","advanced","security"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSettingsTab(tab)}
+                className={`flex-1 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
+                  ${settingsTab === tab
+                    ? "border-violet-600 text-violet-700 dark:text-violet-400"
+                    : "border-transparent text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
+                  }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
 
-          {/* Settings — always mounted, hidden when not active */}
-          <div className={`flex-1 overflow-y-auto ${chatMode === "settings" ? "block" : "hidden"}`}>
+          {/* Settings content — always visible */}
+          <div className="flex-1 overflow-y-auto">
             <div className="w-full max-w-[640px] mx-auto">
 
               {/* General tab */}
@@ -405,10 +415,53 @@ export default function PersonaEditor({
             </div>
           </div>
 
-        {/* Right panel — preview */}
-        <div className={`flex-col w-full lg:w-[380px] shrink-0 border-l border-[#E5E5E5] dark:border-[#1E3050] bg-[#FAFAFA] dark:bg-[#0B1426] min-h-0
-          ${mobileView === "preview" ? "flex" : "hidden"} lg:flex`}>
-          <div className="flex-1 min-h-0 overflow-hidden">
+        {/* Drag handle */}
+        <div
+          className="hidden lg:flex shrink-0 w-1.5 cursor-col-resize items-center justify-center group hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+          onMouseDown={(e) => {
+            isDragging.current = true;
+            dragStartX.current = e.clientX;
+            dragStartWidth.current = rightWidth;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+        >
+          <div className="w-0.5 h-8 rounded-full bg-[#E5E5E5] dark:bg-[#1E3050] group-hover:bg-violet-400 dark:group-hover:bg-violet-500 transition-colors" />
+        </div>
+
+        {/* Right panel — preview / instructions */}
+        <div
+          className={`flex-col shrink-0 border-l border-[#E5E5E5] dark:border-[#1E3050] bg-[#FAFAFA] dark:bg-[#0B1426] min-h-0
+            ${mobileView === "preview" ? "flex" : "hidden"} lg:flex`}
+          style={{ width: rightWidth }}
+        >
+
+          {/* Right panel segmented control */}
+          <div className="shrink-0 flex items-center justify-center px-4 py-2.5 border-b border-[#E5E5E5] dark:border-[#1E3050]">
+            <div className="flex items-center bg-[#F5F5F5] dark:bg-[#162238] rounded-lg p-0.5">
+              {(["preview", "instructions"] as const).map((view) => (
+                <button
+                  key={view}
+                  onClick={() => setRightView(view)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all capitalize
+                    ${rightView === view
+                      ? "bg-white dark:bg-[#111D30] text-[#262626] dark:text-[#C8D8EE] shadow-sm"
+                      : "text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE]"
+                    }`}
+                >
+                  {view === "preview" ? "Preview Chat" : (
+                    <span className="flex items-center gap-1.5">
+                      Instructions
+                      <span className="px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400">V3</span>
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview Chat */}
+          <div className={`flex-1 min-h-0 overflow-hidden ${rightView === "preview" ? "flex flex-col" : "hidden"}`}>
             <LivePreview
               agentName={state.agentName}
               agentColor={state.agentColor}
@@ -432,6 +485,14 @@ export default function PersonaEditor({
               markdownInResponses={state.markdownInResponses}
             />
           </div>
+
+          {/* Instructions (BuilderChat) */}
+          <div className={`flex-1 flex-col overflow-hidden ${rightView === "instructions" ? "flex" : "hidden"}`}>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <BuilderChat state={state} onApply={(patch) => updateState(patch)} />
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -439,29 +500,4 @@ export default function PersonaEditor({
   );
 }
 
-function ModeToggle({
-  chatMode,
-  onChange,
-}: {
-  chatMode: "builder" | "settings";
-  onChange: (mode: "builder" | "settings") => void;
-}) {
-  return (
-    <div className="flex items-center bg-[#F5F5F5] dark:bg-[#162238] rounded-lg p-0.5 shrink-0">
-      {(["builder", "settings"] as const).map((mode) => (
-        <button
-          key={mode}
-          onClick={() => onChange(mode)}
-          className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all
-            ${chatMode === mode
-              ? "bg-white dark:bg-[#111D30] text-[#262626] dark:text-[#C8D8EE] shadow-sm"
-              : "text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE]"
-            }`}
-        >
-          {mode === "builder" ? "Instructions" : "Settings"}
-        </button>
-      ))}
-    </div>
-  );
-}
 

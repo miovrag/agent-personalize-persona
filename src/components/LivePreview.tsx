@@ -509,6 +509,9 @@ export default function LivePreview({
               </svg>
             </button>
           </div>
+          <p className="text-center text-[10px] text-[#A3A3A3] dark:text-[#4A6A8A] mt-1.5">
+            Powered by <span className="font-semibold" style={{ color }}>CustomGPT.ai</span>
+          </p>
         </div>
       </div>
 
