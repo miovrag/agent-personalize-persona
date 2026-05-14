@@ -40,6 +40,232 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   );
 }
 
+// ─── Context Depth ────────────────────────────────────────────────────────────
+
+const PLAN_ORDER = { standard: 0, premium: 1, enterprise: 2 } as const;
+type PlanTier = keyof typeof PLAN_ORDER;
+
+const contextTiers: {
+  id: string; label: string; desc: string; planRequired: PlanTier; multiplier: number | null; emoji: string; recommended?: boolean;
+}[] = [
+  { id: "compact",  label: "Compact",  planRequired: "standard",   multiplier: 1,    emoji: "⚡", desc: "Best for high-volume, simple Q&A. Fast and efficient." },
+  { id: "balanced", label: "Balanced", planRequired: "standard",   multiplier: 1,    emoji: "⚖️", desc: "Good for most business use cases. Balanced performance and cost.", recommended: true },
+  { id: "extended", label: "Extended", planRequired: "premium",    multiplier: 2,    emoji: "📚", desc: "Larger knowledge retrieval and longer conversation memory." },
+  { id: "rich",     label: "Rich",     planRequired: "premium",    multiplier: 3,    emoji: "🔍", desc: "Deep retrieval for complex, document-heavy agents." },
+  { id: "max",      label: "Max",      planRequired: "enterprise", multiplier: 4,    emoji: "🧠", desc: "Maximum context for research, compliance, and multi-document workflows." },
+  { id: "custom",   label: "Custom",   planRequired: "enterprise", multiplier: null, emoji: "⚙️", desc: "Controlled by your plan settings. Contact your account manager to adjust." },
+];
+
+type ContextUpsellTier = typeof contextTiers[0];
+
+function ContextDepthSection({
+  state,
+  onChange,
+}: {
+  state: PersonaState;
+  onChange: (patch: Partial<PersonaState>) => void;
+}) {
+  const currentPlan: PlanTier = "premium";
+  const step = 100 / (contextTiers.length - 1);
+
+  const tierIndex = Math.max(0, contextTiers.findIndex((t) => t.id === state.contextDepth));
+  const [sliderVal, setSliderVal] = useState(tierIndex >= 0 ? tierIndex * step : step);
+  const [upsellTier, setUpsellTier] = useState<ContextUpsellTier | null>(null);
+  const [upsellClosing, setUpsellClosing] = useState(false);
+  const upsellShownRef = useRef(false);
+
+  const maxUnlockedIndex = contextTiers.reduce(
+    (max, tier, i) => (PLAN_ORDER[tier.planRequired] <= PLAN_ORDER[currentPlan] ? i : max),
+    0
+  );
+  const maxAllowedVal = maxUnlockedIndex * step;
+  const firstLockedTier = contextTiers[maxUnlockedIndex + 1] ?? null;
+  const safeIndex = Math.min(Math.round(sliderVal / step), contextTiers.length - 1);
+  const activeTier = contextTiers[safeIndex];
+
+  const closeUpsell = () => {
+    setUpsellClosing(true);
+    setTimeout(() => { setUpsellTier(null); setUpsellClosing(false); }, 260);
+  };
+
+  const handleChange = (raw: number) => {
+    if (raw > maxAllowedVal && firstLockedTier && !upsellShownRef.current) {
+      upsellShownRef.current = true;
+      setUpsellTier(firstLockedTier);
+    }
+    const v = Math.min(raw, maxAllowedVal);
+    setSliderVal(v);
+    const idx = Math.min(Math.round(v / step), maxUnlockedIndex);
+    onChange({ contextDepth: contextTiers[idx].id });
+  };
+
+  return (
+    <>
+      {/* Upsell modal */}
+      {upsellTier && (
+        <div
+          className={`ds-modal-overlay ${upsellClosing ? "is-closing" : "is-open"}`}
+          onClick={closeUpsell}
+        >
+          <div className="ds-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="ds-modal-media">
+              <svg className="ds-modal-media-icon" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                <polyline points="2 12 12 17 22 12" />
+                <polyline points="2 17 12 22 22 17" />
+              </svg>
+              <button className="ds-modal-close" onClick={closeUpsell} aria-label="Close">
+                <i className="ti ti-x" />
+              </button>
+            </div>
+            <div className="ds-modal-body">
+              <span className="ds-badge-plan">
+                <i className="ti ti-lock-open" style={{ fontSize: 13 }} />
+                {upsellTier.planRequired === "premium" ? "Premium" : "Enterprise"}
+              </span>
+              <h2 className="ds-modal-heading">Go deeper with context</h2>
+              <p className="ds-modal-desc">
+                Retrieve more knowledge, remember longer conversations, and handle complex multi-document workflows — available on{" "}
+                {upsellTier.planRequired === "premium" ? "Premium" : "Enterprise"}.
+              </p>
+              <ul className="ds-modal-features">
+                {upsellTier.planRequired === "premium" ? (
+                  <>
+                    <li><i className="ti ti-circle-check" /> Extended knowledge retrieval window</li>
+                    <li><i className="ti ti-circle-check" /> Longer conversation memory</li>
+                    <li><i className="ti ti-circle-check" /> Better handling of complex documents</li>
+                  </>
+                ) : (
+                  <>
+                    <li><i className="ti ti-circle-check" /> Maximum context for compliance workflows</li>
+                    <li><i className="ti ti-circle-check" /> Multi-document reasoning at scale</li>
+                    <li><i className="ti ti-circle-check" /> Custom depth controlled by your account</li>
+                  </>
+                )}
+              </ul>
+              <div className="ds-modal-actions">
+                <button className="ds-btn-upgrade">
+                  <i className="ti ti-sparkles" />
+                  Upgrade to {upsellTier.planRequired === "premium" ? "Premium" : "Enterprise"}
+                </button>
+                <button className="ds-btn-notnow" onClick={closeUpsell}>Not now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-[#262626] dark:text-[#C8D8EE]">Context Depth</h3>
+          <InfoIcon tooltip="Adjusts knowledge retrieval depth and conversation memory" />
+        </div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-[#737373] dark:text-[#7A9BBF]">Enable context depth control</span>
+          <Toggle checked={state.contextDepthEnabled} onChange={(v) => onChange({ contextDepthEnabled: v })} />
+        </div>
+
+        {state.contextDepthEnabled && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">How deep should it search?</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F5F5F5] dark:bg-[#162238] text-violet-600">
+                {activeTier.label}{activeTier.multiplier && activeTier.multiplier > 1 ? ` · ${activeTier.multiplier}×` : ""}
+              </span>
+            </div>
+
+            <div>
+              <div className="relative h-5 flex items-center">
+                <div
+                  className="absolute inset-x-[10px] h-[6px] rounded-full overflow-hidden pointer-events-none"
+                  style={{ top: "50%", transform: "translateY(-50%)" }}
+                >
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to right, #a5b4fc, #7367f0, #6840c6)" }} />
+                  <div
+                    className="absolute top-0 h-full bg-gray-200 dark:bg-[#2A4060]"
+                    style={{ left: `${sliderVal}%`, width: `${Math.max(0, maxAllowedVal - sliderVal)}%` }}
+                  />
+                  {maxAllowedVal < 100 && (
+                    <div
+                      className="absolute top-0 h-full"
+                      style={{
+                        left: `${maxAllowedVal}%`,
+                        right: 0,
+                        background: "repeating-linear-gradient(90deg,#e2e8f0 0px,#e2e8f0 4px,#f1f5f9 4px,#f1f5f9 8px)",
+                      }}
+                    />
+                  )}
+                </div>
+                <input
+                  type="range" min={0} max={100} step={1} value={sliderVal}
+                  onMouseDown={() => { upsellShownRef.current = false; }}
+                  onTouchStart={() => { upsellShownRef.current = false; }}
+                  onChange={(e) => handleChange(Number(e.target.value))}
+                  className="context-depth-slider"
+                  aria-label="Context depth"
+                />
+              </div>
+              <div className="flex justify-between px-[9px] mt-1">
+                {contextTiers.map((tier, i) => {
+                  const locked = PLAN_ORDER[tier.planRequired] > PLAN_ORDER[currentPlan];
+                  const active = sliderVal >= i * step - 1;
+                  return (
+                    <div
+                      key={tier.id}
+                      className={`rounded-full w-[2px] h-[6px] transition-colors ${
+                        active && !locked ? "bg-violet-500" : "bg-gray-300 dark:bg-[#2A4060]"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-xs text-[#A3A3A3] dark:text-[#7A9BBF] font-medium px-0.5 mt-1">
+                <span>Compact & fast</span>
+                <span>Max depth</span>
+              </div>
+            </div>
+
+            <div className="bg-[#FAFAFA] dark:bg-[#162238] rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
+              <span className="text-base mt-0.5 select-none">{activeTier.emoji}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  <p className="text-xs font-medium text-[#525252] dark:text-[#C8D8EE] m-0">
+                    {activeTier.label} context depth
+                    {activeTier.multiplier && activeTier.multiplier > 1 ? ` · ${activeTier.multiplier}× credits` : ""}
+                  </p>
+                  {activeTier.recommended && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400">
+                      Recommended
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#737373] dark:text-[#7A9BBF] leading-relaxed m-0">{activeTier.desc}</p>
+              </div>
+            </div>
+
+            {maxAllowedVal < 100 && (
+              <button
+                onClick={() => { if (firstLockedTier) setUpsellTier(firstLockedTier); }}
+                className="flex items-center gap-2 px-1 text-left group"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-[#A3A3A3] shrink-0 group-hover:text-violet-500 transition-colors">
+                  <rect x="1.5" y="5" width="9" height="6.5" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+                <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] group-hover:text-violet-600 transition-colors">
+                  Max & Custom tiers require an <span className="text-violet-600 font-medium">Enterprise</span> plan
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AI_MODELS = [
   {
     id: "claude-haiku-4-5",
@@ -357,6 +583,9 @@ export default function IntelligenceSettings({
         value={state.aiModel}
         onChange={(v) => onChange({ aiModel: v })}
       />
+
+      {/* Context Depth */}
+      <ContextDepthSection state={state} onChange={onChange} />
 
       {/* Data Source Control */}
       <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden p-5">
