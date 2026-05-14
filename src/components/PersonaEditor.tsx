@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PersonaState } from "./types";
 import { generateInstruction, generateExampleQuestions, completionScore } from "./generateInstruction";
-import AdvancedToggle from "./AdvancedToggle";
+import ExpertModeSection from "./ExpertModeSection";
 import PresetManager from "./PresetManager";
 import LivePreview from "./LivePreview";
 import BuilderChat from "./BuilderChat";
@@ -32,8 +32,8 @@ const DEFAULT_STATE: PersonaState = {
   starterQuestions: [],
   useContextRichStarters: false,
   starterQuestionsHeader: "",
-  starterQuestionsExpand: "",
-  starterQuestionsCollapse: "",
+  starterQuestionsExpand: "Show more",
+  starterQuestionsCollapse: "Show less",
   agentLanguage: "English",
   placeholderPrompt: "",
   loadingIndicator: "typing-dots",
@@ -106,6 +106,9 @@ const DEFAULT_STATE: PersonaState = {
   backgroundType: "color",
   backgroundColor: "#7367F0",
   backgroundImageUrl: "",
+  subInstructionOverrides: {},
+  contextDepth: "balanced",
+  contextDepthEnabled: true,
 };
 
 type SaveState = "idle" | "saving" | "saved";
@@ -124,7 +127,6 @@ export default function PersonaEditor({
 }) {
   const [state, setState] = useState<PersonaState>({ ...DEFAULT_STATE, agentName: initialName });
   const [instruction, setInstruction] = useState(() => generateInstruction({ ...DEFAULT_STATE, agentName: initialName }));
-  const [hasCustomEdit, setHasCustomEdit] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isDirty, setIsDirty] = useState(false);
   const [widgetKey, setWidgetKey] = useState(0);
@@ -161,13 +163,11 @@ export default function PersonaEditor({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!hasCustomEdit) {
-      const base = generateInstruction(state);
-      const full = state.additionalInstructions.trim()
-        ? `${base}\n\n## Detailed Instructions\n${state.additionalInstructions.trim()}`
-        : base;
-      setInstruction(full);
-    }
+    const base = generateInstruction(state);
+    const full = state.additionalInstructions.trim()
+      ? `${base}\n\n## Detailed Instructions\n${state.additionalInstructions.trim()}`
+      : base;
+    setInstruction(full);
     setIsDirty(true);
   }, [state]);
 
@@ -203,7 +203,6 @@ export default function PersonaEditor({
 
   const updateState = useCallback((patch: Partial<PersonaState>) => {
     setState((prev) => ({ ...prev, ...patch }));
-    setHasCustomEdit(false);
     setSaveState("idle");
   }, []);
 
@@ -223,7 +222,6 @@ export default function PersonaEditor({
 
   const handleLoadPreset = (presetState: PersonaState) => {
     setState({ ...DEFAULT_STATE, ...presetState });
-    setHasCustomEdit(false);
     setIsDirty(true);
     setSaveState("idle");
   };
@@ -383,34 +381,47 @@ export default function PersonaEditor({
                 <SecuritySettings state={state} onChange={updateState} onSave={handleSave} />
               )}
 
-              {/* Persona tab (existing settings content) */}
-              {settingsTab === "persona" && (<>
-            <div className="p-6 space-y-6">
+              {/* Persona tab */}
+              {settingsTab === "persona" && (
+                <div className="p-6 space-y-6">
 
-              {/* Advanced */}
-              <AdvancedToggle
-                instruction={instruction}
-                onEdit={(text) => {
-                  setInstruction(text);
-                  setHasCustomEdit(true);
-                  setSaveState("idle");
-                  setIsDirty(true);
-                }}
-                hasCustomEdit={hasCustomEdit}
-              />
+                  {/* Main detailed instruction field */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-[#262626] dark:text-[#C8D8EE]">
+                        Detailed Instructions
+                      </label>
+                      <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF]">
+                        {state.additionalInstructions.length} chars
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#737373] dark:text-[#7A9BBF]">
+                      Describe how your agent should behave. This is added to the system-generated instruction.
+                    </p>
+                    <textarea
+                      value={state.additionalInstructions}
+                      onChange={(e) => updateState({ additionalInstructions: e.target.value })}
+                      rows={10}
+                      placeholder="e.g. Always greet users by name if known. When unsure, ask a clarifying question before answering..."
+                      className="w-full px-3 py-3 text-sm rounded-xl border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none leading-relaxed text-[#404040] dark:text-[#C8D8EE] placeholder:text-[#C0C0C0] dark:placeholder:text-[#3A5070]"
+                    />
+                  </div>
 
-              {/* Bottom CTA */}
-              <div className="flex items-center gap-3 pt-2 pb-6">
-                <button
-                  onClick={handleSave}
-                  disabled={saveState === "saving"}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ${saveBg} disabled:opacity-70`}
-                >
-                  {saveLabel}
-                </button>
-              </div>
-            </div>
-            </>)}
+                  {/* Expert Mode */}
+                  <ExpertModeSection state={state} onChange={updateState} />
+
+                  {/* Bottom CTA */}
+                  <div className="flex items-center gap-3 pt-2 pb-6">
+                    <button
+                      onClick={handleSave}
+                      disabled={saveState === "saving"}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ${saveBg} disabled:opacity-70`}
+                    >
+                      {saveLabel}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             </div>
           </div>

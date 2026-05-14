@@ -22,87 +22,93 @@ const OUTPUT_STYLE_MAP: Record<string, string> = {
   "summary": "Begin with a brief summary, then provide full details below.",
 };
 
-export function generateInstruction(state: PersonaState): string {
-  const role = state.role ?? "";
-  const mission = state.mission ?? "";
-  const audience = state.audience ?? "";
-  const tone = state.tone ?? 50;
-  const styles = state.styles ?? [];
-  const guardrails = state.guardrails ?? [];
-  const behaviorToggles = state.behaviorToggles ?? [];
-  const boundaries = state.boundaries ?? "";
-  const outputStyle = state.outputStyle ?? "";
-  const additionalInstructions = state.additionalInstructions ?? "";
-  const outcomes = state.outcomes ?? [];
+export const SYSTEM_SECTIONS = [
+  { key: "roleScope", label: "Role & Scope", description: "Agent identity, mission, and target audience" },
+  { key: "communicationStyle", label: "Communication Style", description: "Tone and language style guidelines" },
+  { key: "behaviorRules", label: "Behavior Rules", description: "Guardrails and behavioral constraints" },
+  { key: "boundaries", label: "Boundaries", description: "What the agent should not discuss or do" },
+  { key: "outputFormat", label: "Output Format", description: "How responses should be structured" },
+  { key: "capabilities", label: "Capabilities", description: "Actions beyond answering questions" },
+  { key: "fallback", label: "Fallback Behavior", description: "How to handle unanswerable questions" },
+] as const;
 
-  const lines: string[] = [];
-
-  // Identity
-  lines.push(`## Role & Scope`);
-  if (role.trim()) lines.push(`**Role:** ${role.trim()}`);
-  if (mission.trim()) lines.push(`**Mission:** ${mission.trim()}`);
-  if (audience.trim()) lines.push(`**Audience:** ${audience.trim()}`);
-  if (!role.trim() && !mission.trim() && !audience.trim()) {
-    lines.push(`You are an AI agent designed to assist users with their questions.`);
+function generateRoleScopeSection(state: PersonaState): string {
+  const lines: string[] = ["## Role & Scope"];
+  if (state.role.trim()) lines.push(`**Role:** ${state.role.trim()}`);
+  if (state.mission.trim()) lines.push(`**Mission:** ${state.mission.trim()}`);
+  if (state.audience.trim()) lines.push(`**Audience:** ${state.audience.trim()}`);
+  if (!state.role.trim() && !state.mission.trim() && !state.audience.trim()) {
+    lines.push("You are an AI agent designed to assist users with their questions.");
   }
-  lines.push(`Respond ${toneDescriptor(tone)}.`);
-  lines.push("");
-
-  // Communication style
-  lines.push(`## Communication Style`);
-  lines.push(toneAdverb(tone));
-  if (styles.length > 0) {
-    lines.push(`Emphasize these qualities in your responses: ${styles.join(", ")}.`);
-  }
-  lines.push("");
-
-  // Behavior rules
-  if (guardrails.length > 0 || behaviorToggles.length > 0) {
-    lines.push(`## Behavior Rules`);
-    guardrails.forEach((g) => lines.push(`- ${g}`));
-    if (behaviorToggles.includes("steps"))
-      lines.push(`- Always break down answers into clear, numbered steps.`);
-    if (behaviorToggles.includes("institution"))
-      lines.push(`- Always mention the responsible institution or authority.`);
-    if (behaviorToggles.includes("clarify"))
-      lines.push(`- Ask a clarifying question before giving a final answer when the request is ambiguous.`);
-    if (behaviorToggles.includes("cite"))
-      lines.push(`- Cite the source whenever possible.`);
-    lines.push("");
-  }
-
-  // Boundaries
-  if (boundaries.trim()) {
-    lines.push(`## Boundaries`);
-    lines.push(boundaries.trim());
-    lines.push("");
-  }
-
-  // Output format
-  if (outputStyle && OUTPUT_STYLE_MAP[outputStyle]) {
-    lines.push(`## Output Format`);
-    lines.push(OUTPUT_STYLE_MAP[outputStyle]);
-    lines.push("");
-  }
-
-  // Capabilities
-  if (outcomes.length > 0) {
-    lines.push(`## Capabilities`);
-    lines.push(
-      `Beyond answering questions, you are enabled to: ${outcomes.join(", ")}.`
-    );
-    lines.push(
-      "Use these capabilities when they serve the user's goal, not proactively."
-    );
-    lines.push("");
-  }
-
-  lines.push(`## Fallback Behavior`);
-  lines.push(
-    `If you cannot answer a question based on your knowledge base, say so clearly and suggest where the user might find help. Never fabricate information.`
-  );
-
+  lines.push(`Respond ${toneDescriptor(state.tone)}.`);
   return lines.join("\n");
+}
+
+function generateCommunicationStyleSection(state: PersonaState): string {
+  const lines: string[] = ["## Communication Style"];
+  lines.push(toneAdverb(state.tone));
+  if (state.styles.length > 0) {
+    lines.push(`Emphasize these qualities in your responses: ${state.styles.join(", ")}.`);
+  }
+  return lines.join("\n");
+}
+
+function generateBehaviorRulesSection(state: PersonaState): string {
+  if (state.guardrails.length === 0 && state.behaviorToggles.length === 0) return "";
+  const lines: string[] = ["## Behavior Rules"];
+  state.guardrails.forEach((g) => lines.push(`- ${g}`));
+  if (state.behaviorToggles.includes("steps")) lines.push("- Always break down answers into clear, numbered steps.");
+  if (state.behaviorToggles.includes("institution")) lines.push("- Always mention the responsible institution or authority.");
+  if (state.behaviorToggles.includes("clarify")) lines.push("- Ask a clarifying question before giving a final answer when the request is ambiguous.");
+  if (state.behaviorToggles.includes("cite")) lines.push("- Cite the source whenever possible.");
+  return lines.join("\n");
+}
+
+function generateBoundariesSection(state: PersonaState): string {
+  if (!state.boundaries.trim()) return "";
+  return `## Boundaries\n${state.boundaries.trim()}`;
+}
+
+function generateOutputFormatSection(state: PersonaState): string {
+  if (!state.outputStyle || !OUTPUT_STYLE_MAP[state.outputStyle]) return "";
+  return `## Output Format\n${OUTPUT_STYLE_MAP[state.outputStyle]}`;
+}
+
+function generateCapabilitiesSection(state: PersonaState): string {
+  if (state.outcomes.length === 0) return "";
+  return [
+    "## Capabilities",
+    `Beyond answering questions, you are enabled to: ${state.outcomes.join(", ")}.`,
+    "Use these capabilities when they serve the user's goal, not proactively.",
+  ].join("\n");
+}
+
+function generateFallbackSection(_state: PersonaState): string {
+  return "## Fallback Behavior\nIf you cannot answer a question based on your knowledge base, say so clearly and suggest where the user might find help. Never fabricate information.";
+}
+
+const SECTION_GENERATORS: Record<string, (state: PersonaState) => string> = {
+  roleScope: generateRoleScopeSection,
+  communicationStyle: generateCommunicationStyleSection,
+  behaviorRules: generateBehaviorRulesSection,
+  boundaries: generateBoundariesSection,
+  outputFormat: generateOutputFormatSection,
+  capabilities: generateCapabilitiesSection,
+  fallback: generateFallbackSection,
+};
+
+export function getSystemSectionContent(key: string, state: PersonaState): string {
+  return SECTION_GENERATORS[key]?.(state) ?? "";
+}
+
+export function generateInstruction(state: PersonaState): string {
+  const overrides = state.subInstructionOverrides ?? {};
+  const sections: string[] = [];
+  for (const { key } of SYSTEM_SECTIONS) {
+    const content = key in overrides ? overrides[key]! : SECTION_GENERATORS[key](state);
+    if (content.trim()) sections.push(content.trim());
+  }
+  return sections.join("\n\n");
 }
 
 export function generatePreviewResponse(state: PersonaState): {

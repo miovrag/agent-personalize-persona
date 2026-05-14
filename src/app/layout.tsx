@@ -50,6 +50,12 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${geistMono.variable} ${publicSans.variable} ${nunito.variable} ${merriweather.variable} ${roboto.variable} h-full antialiased`}
     >
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css"
+        />
+      </head>
       <body className="h-full overflow-hidden bg-[#F5F5F5]">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

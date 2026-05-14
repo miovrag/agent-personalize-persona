@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { PersonaState } from "./types";
-import { generateInstruction } from "./generateInstruction";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -629,11 +628,7 @@ export default function BuilderChat({ state, onApply }: Props) {
         diff = computeDiff(state, data.patch);
         prevStateRef.current = { ...state };
         setCanUndo(true);
-        // Compute the full instruction from the new state and save it into
-        // additionalInstructions so Settings > Detailed instructions stays in sync.
-        const newState: PersonaState = { ...state, ...data.patch, additionalInstructions: "" };
-        const additionalInstructions = generateInstruction(newState);
-        onApply({ ...data.patch, additionalInstructions });
+        onApply(data.patch);
       }
 
       const assistantMsg: Message = {

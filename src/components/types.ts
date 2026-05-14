@@ -89,6 +89,10 @@ export interface PersonaState {
   backgroundType: "image" | "color";
   backgroundColor: string;
   backgroundImageUrl: string;
+  subInstructionOverrides?: Partial<Record<string, string>>;
+  // Context Depth
+  contextDepth: string;
+  contextDepthEnabled: boolean;
 }
 
 export const AGENT_ROLE_OPTIONS = [

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { PersonaState } from "./types";
+import StarterQuestionsSection from "./StarterQuestionsSection";
 
 const LANGUAGES = [
   { label: "🇺🇸 English", value: "English" },
@@ -146,7 +147,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] overflow-hidden px-5 py-4">
+    <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] px-5 py-4">
       <div className="flex items-center gap-2 mb-3">
         <SettingsIcon />
         <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">{label}</span>
@@ -318,6 +319,317 @@ export function LoadingIndicatorSection({
   );
 }
 
+// ─── Context Depth ────────────────────────────────────────────────────────────
+
+const PLAN_ORDER = { standard: 0, premium: 1, enterprise: 2 } as const;
+type PlanTier = keyof typeof PLAN_ORDER;
+
+const contextTiers: {
+  id: string; label: string; desc: string; planRequired: PlanTier; multiplier: number | null; emoji: string; recommended?: boolean;
+}[] = [
+  { id: "compact",  label: "Compact",  planRequired: "standard",   multiplier: 1,    emoji: "⚡", desc: "Best for high-volume, simple Q&A. Fast and efficient." },
+  { id: "balanced", label: "Balanced", planRequired: "standard",   multiplier: 1,    emoji: "⚖️", desc: "Good for most business use cases. Balanced performance and cost.", recommended: true },
+  { id: "extended", label: "Extended", planRequired: "premium",    multiplier: 2,    emoji: "📚", desc: "Larger knowledge retrieval and longer conversation memory." },
+  { id: "rich",     label: "Rich",     planRequired: "premium",    multiplier: 3,    emoji: "🔍", desc: "Deep retrieval for complex, document-heavy agents." },
+  { id: "max",      label: "Max",      planRequired: "enterprise", multiplier: 4,    emoji: "🧠", desc: "Maximum context for research, compliance, and multi-document workflows." },
+  { id: "custom",   label: "Custom",   planRequired: "enterprise", multiplier: null, emoji: "⚙️", desc: "Controlled by your plan settings. Contact your account manager to adjust." },
+];
+
+type ContextUpsellTier = typeof contextTiers[0];
+
+function ContextDepthSection({
+  state,
+  onChange,
+}: {
+  state: PersonaState;
+  onChange: (patch: Partial<PersonaState>) => void;
+}) {
+  const currentPlan: PlanTier = "premium";
+  const step = 100 / (contextTiers.length - 1); // 20
+
+  const tierIndex = Math.max(0, contextTiers.findIndex((t) => t.id === state.contextDepth));
+  const [sliderVal, setSliderVal] = useState(tierIndex >= 0 ? tierIndex * step : step);
+  const [upsellTier, setUpsellTier] = useState<ContextUpsellTier | null>(null);
+  const [upsellClosing, setUpsellClosing] = useState(false);
+  const upsellShownRef = useRef(false);
+
+  const maxUnlockedIndex = contextTiers.reduce(
+    (max, tier, i) => (PLAN_ORDER[tier.planRequired] <= PLAN_ORDER[currentPlan] ? i : max),
+    0
+  );
+  const maxAllowedVal = maxUnlockedIndex * step;
+  const firstLockedTier = contextTiers[maxUnlockedIndex + 1] ?? null;
+  const safeIndex = Math.min(Math.round(sliderVal / step), contextTiers.length - 1);
+  const activeTier = contextTiers[safeIndex];
+
+  const closeUpsell = () => {
+    setUpsellClosing(true);
+    setTimeout(() => { setUpsellTier(null); setUpsellClosing(false); }, 260);
+  };
+
+  const handleChange = (raw: number) => {
+    if (raw > maxAllowedVal && firstLockedTier && !upsellShownRef.current) {
+      upsellShownRef.current = true;
+      setUpsellTier(firstLockedTier);
+    }
+    const v = Math.min(raw, maxAllowedVal);
+    setSliderVal(v);
+    const idx = Math.min(Math.round(v / step), maxUnlockedIndex);
+    onChange({ contextDepth: contextTiers[idx].id });
+  };
+
+  return (
+    <>
+      {/* Upsell modal */}
+      {upsellTier && (
+        <div
+          className={`ds-modal-overlay ${upsellClosing ? "is-closing" : "is-open"}`}
+          onClick={closeUpsell}
+        >
+          <div className="ds-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="ds-modal-media">
+              <svg className="ds-modal-media-icon" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                <polyline points="2 12 12 17 22 12" />
+                <polyline points="2 17 12 22 22 17" />
+              </svg>
+              <button className="ds-modal-close" onClick={closeUpsell} aria-label="Close">
+                <i className="ti ti-x" />
+              </button>
+            </div>
+            <div className="ds-modal-body">
+              <span className="ds-badge-plan">
+                <i className="ti ti-lock-open" style={{ fontSize: 13 }} />
+                {upsellTier.planRequired === "premium" ? "Premium" : "Enterprise"}
+              </span>
+              <h2 className="ds-modal-heading">Go deeper with context</h2>
+              <p className="ds-modal-desc">
+                Retrieve more knowledge, remember longer conversations, and handle complex multi-document workflows — available on{" "}
+                {upsellTier.planRequired === "premium" ? "Premium" : "Enterprise"}.
+              </p>
+              <ul className="ds-modal-features">
+                {upsellTier.planRequired === "premium" ? (
+                  <>
+                    <li><i className="ti ti-circle-check" /> Extended knowledge retrieval window</li>
+                    <li><i className="ti ti-circle-check" /> Longer conversation memory</li>
+                    <li><i className="ti ti-circle-check" /> Better handling of complex documents</li>
+                  </>
+                ) : (
+                  <>
+                    <li><i className="ti ti-circle-check" /> Maximum context for compliance workflows</li>
+                    <li><i className="ti ti-circle-check" /> Multi-document reasoning at scale</li>
+                    <li><i className="ti ti-circle-check" /> Custom depth controlled by your account</li>
+                  </>
+                )}
+              </ul>
+              <div className="ds-modal-actions">
+                <button className="ds-btn-upgrade">
+                  <i className="ti ti-sparkles" />
+                  Upgrade to {upsellTier.planRequired === "premium" ? "Premium" : "Enterprise"}
+                </button>
+                <button className="ds-btn-notnow" onClick={closeUpsell}>Not now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Section label="Context Depth" info tooltip="Adjusts knowledge retrieval depth and conversation memory">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-[#737373] dark:text-[#7A9BBF]">Enable context depth control</span>
+          <Toggle checked={state.contextDepthEnabled} onChange={(v) => onChange({ contextDepthEnabled: v })} />
+        </div>
+
+        {state.contextDepthEnabled && (
+          <div className="flex flex-col gap-3">
+            {/* Label + active pill */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">How deep should it search?</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F5F5F5] dark:bg-[#162238] text-violet-600">
+                {activeTier.label}{activeTier.multiplier && activeTier.multiplier > 1 ? ` · ${activeTier.multiplier}×` : ""}
+              </span>
+            </div>
+
+            {/* Slider track */}
+            <div>
+              <div className="relative h-5 flex items-center">
+                <div
+                  className="absolute inset-x-[10px] h-[6px] rounded-full overflow-hidden pointer-events-none"
+                  style={{ top: "50%", transform: "translateY(-50%)" }}
+                >
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to right, #a5b4fc, #7367f0, #6840c6)" }} />
+                  <div
+                    className="absolute top-0 h-full bg-gray-200 dark:bg-[#2A4060]"
+                    style={{ left: `${sliderVal}%`, width: `${Math.max(0, maxAllowedVal - sliderVal)}%` }}
+                  />
+                  {maxAllowedVal < 100 && (
+                    <div
+                      className="absolute top-0 h-full"
+                      style={{
+                        left: `${maxAllowedVal}%`,
+                        right: 0,
+                        background: "repeating-linear-gradient(90deg,#e2e8f0 0px,#e2e8f0 4px,#f1f5f9 4px,#f1f5f9 8px)",
+                      }}
+                    />
+                  )}
+                </div>
+                <input
+                  type="range" min={0} max={100} step={1} value={sliderVal}
+                  onMouseDown={() => { upsellShownRef.current = false; }}
+                  onTouchStart={() => { upsellShownRef.current = false; }}
+                  onChange={(e) => handleChange(Number(e.target.value))}
+                  className="context-depth-slider"
+                  aria-label="Context depth"
+                />
+              </div>
+              {/* Tick marks */}
+              <div className="flex justify-between px-[9px] mt-1">
+                {contextTiers.map((tier, i) => {
+                  const locked = PLAN_ORDER[tier.planRequired] > PLAN_ORDER[currentPlan];
+                  const active = sliderVal >= i * step - 1;
+                  return (
+                    <div
+                      key={tier.id}
+                      className={`rounded-full w-[2px] h-[6px] transition-colors ${
+                        active && !locked ? "bg-violet-500" : "bg-gray-300 dark:bg-[#2A4060]"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-xs text-[#A3A3A3] dark:text-[#7A9BBF] font-medium px-0.5 mt-1">
+                <span>Compact & fast</span>
+                <span>Max depth</span>
+              </div>
+            </div>
+
+            {/* Active tier preview pill */}
+            <div className="bg-[#FAFAFA] dark:bg-[#162238] rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
+              <span className="text-base mt-0.5 select-none">{activeTier.emoji}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  <p className="text-xs font-medium text-[#525252] dark:text-[#C8D8EE] m-0">
+                    {activeTier.label} context depth
+                    {activeTier.multiplier && activeTier.multiplier > 1 ? ` · ${activeTier.multiplier}× credits` : ""}
+                  </p>
+                  {activeTier.recommended && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400">
+                      Recommended
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#737373] dark:text-[#7A9BBF] leading-relaxed m-0">{activeTier.desc}</p>
+              </div>
+            </div>
+
+            {/* Lock hint */}
+            {maxAllowedVal < 100 && (
+              <button
+                onClick={() => { if (firstLockedTier) setUpsellTier(firstLockedTier); }}
+                className="flex items-center gap-2 px-1 text-left group"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-[#A3A3A3] shrink-0 group-hover:text-violet-500 transition-colors">
+                  <rect x="1.5" y="5" width="9" height="6.5" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+                <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] group-hover:text-violet-600 transition-colors">
+                  Max & Custom tiers require an <span className="text-violet-600 font-medium">Enterprise</span> plan
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+      </Section>
+    </>
+  );
+}
+
+// ─── Starter Questions preview illustration ──────────────────────────────────
+
+function PlaceholderPreview() {
+  return (
+    <svg
+      width="120" height="48"
+      viewBox="0 0 120 48"
+      fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ flexShrink: 0, display: "block" }}
+    >
+      {/* Card border */}
+      <rect x="0.5" y="0.5" width="119" height="47" rx="7.5" stroke="#D4D4D4" strokeWidth="1"/>
+
+      {/* Chat bubbles (received) */}
+      <rect x="8" y="8" width="52" height="8" rx="4" fill="#F0EFFF" stroke="#DDD9FC" strokeWidth="0.75"/>
+      <rect x="8" y="19" width="38" height="8" rx="4" fill="#F0EFFF" stroke="#DDD9FC" strokeWidth="0.75"/>
+
+      {/* Composer bar */}
+      <rect x="8" y="32" width="88" height="10" rx="5" stroke="#D4D4D4" strokeWidth="1"/>
+      {/* Placeholder line inside composer */}
+      <rect x="14" y="35.5" width="44" height="3" rx="1.5" fill="#E5E5E5"/>
+      {/* Send button circle */}
+      <circle cx="106" cy="37" r="6" fill="#7367F0" opacity="0.15"/>
+      <path d="M103.5 37l3.5-2v4l-3.5-2z" fill="#7367F0" opacity="0.7"/>
+    </svg>
+  );
+}
+
+function StarterPreview({ mode }: { mode: "expand" | "collapse" }) {
+  const rowCount = mode === "expand" ? 3 : 4;
+  const label = mode === "expand" ? "Show more" : "Show less";
+  // row widths for variety
+  const widths = [88, 64, 76, 60];
+  return (
+    <svg
+      width="120" height={56 + rowCount * 18}
+      viewBox={`0 0 120 ${56 + rowCount * 18}`}
+      fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ flexShrink: 0, display: "block" }}
+    >
+      {/* Card border */}
+      <rect x="0.5" y="0.5" width="119" height={55 + rowCount * 18} rx="7.5" stroke="#D4D4D4" strokeWidth="1"/>
+
+      {/* Header row */}
+      <circle cx="12" cy="13" r="4" stroke="#A3A3A3" strokeWidth="1.2"/>
+      {/* chat bubble icon strokes */}
+      <path d="M10 13h4M12 11v4" stroke="#A3A3A3" strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
+      <rect x="20" y="9" width="36" height="7" rx="3" fill="#E5E5E5"/>
+      <rect x="90" y="9" width="22" height="7" rx="3" fill="#F3F0FD"/>
+
+      {/* Divider */}
+      <line x1="8" y1="24" x2="112" y2="24" stroke="#E5E5E5" strokeWidth="1"/>
+
+      {/* Question rows */}
+      {Array.from({ length: rowCount }).map((_, i) => (
+        <g key={i}>
+          <rect x="8" y={30 + i * 18} width="104" height="12" rx="4" fill="#F5F5F5" stroke="#E5E5E5" strokeWidth="0.75"/>
+          <rect x="14" y={34 + i * 18} width={widths[i]} height="4" rx="2" fill="#D4D4D4"/>
+        </g>
+      ))}
+
+      {/* Footer label */}
+      <rect
+        x={60 - 22} y={36 + rowCount * 18}
+        width="44" height="6" rx="3"
+        fill="#EDE8FD"
+      />
+      <text
+        x="60" y={43 + rowCount * 18}
+        textAnchor="middle"
+        fontSize="5" fontFamily="Inter,system-ui,sans-serif"
+        fontWeight="500" fill="#7367F0"
+      >
+        {label}
+      </text>
+    </svg>
+  );
+}
+
+type StarterTier = "free" | "premium" | "enterprise";
+const STARTER_TIERS: { value: StarterTier; label: string }[] = [
+  { value: "free",       label: "Standard" },
+  { value: "premium",    label: "Premium" },
+  { value: "enterprise", label: "Enterprise" },
+];
+
 export default function ConversationSettings({
   state,
   onChange,
@@ -327,33 +639,7 @@ export default function ConversationSettings({
   onChange: (patch: Partial<PersonaState>) => void;
   onSave: () => void;
 }) {
-  const [newQuestion, setNewQuestion] = useState("");
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingValue, setEditingValue] = useState("");
-
-  const addQuestion = () => {
-    const q = newQuestion.trim();
-    if (!q) return;
-    onChange({ starterQuestions: [...state.starterQuestions, q] });
-    setNewQuestion("");
-  };
-
-  const removeQuestion = (i: number) => {
-    onChange({ starterQuestions: state.starterQuestions.filter((_, idx) => idx !== i) });
-  };
-
-  const startEdit = (i: number) => {
-    setEditingIndex(i);
-    setEditingValue(state.starterQuestions[i]);
-  };
-
-  const commitEdit = () => {
-    if (editingIndex === null) return;
-    const updated = [...state.starterQuestions];
-    updated[editingIndex] = editingValue.trim() || updated[editingIndex];
-    onChange({ starterQuestions: updated });
-    setEditingIndex(null);
-  };
+  const [starterTier, setStarterTier] = useState<StarterTier>("enterprise");
 
   return (
     <div className="px-6 py-6 flex flex-col gap-6">
@@ -381,105 +667,91 @@ export default function ConversationSettings({
       {/* ── Starter Questions ─────────────────────────── */}
       <GroupLabel>Starter Questions</GroupLabel>
 
-      <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] divide-y divide-[#E5E5E5] dark:divide-[#1E3050] overflow-hidden">
+      {/* Tier switcher */}
+      <div
+        className="flex items-center w-fit"
+        style={{
+          padding: "3px 4px",
+          borderRadius: 100,
+          border: "1px solid #7367F0",
+          background: "#7367F0",
+          boxShadow: "0 2px 4px 0 rgba(165,163,174,0.30)",
+          gap: 2,
+        }}
+      >
+        {STARTER_TIERS.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setStarterTier(t.value)}
+            style={{
+              height: 24,
+              padding: "0 12px",
+              borderRadius: 100,
+              border: "none",
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "background 120ms, color 120ms",
+              background: starterTier === t.value ? "#fff" : "transparent",
+              color: starterTier === t.value ? "#7367F0" : "rgba(255,255,255,0.85)",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-          {/* Starter Questions list */}
-          <div className="px-5 py-4">
-            <div className="flex items-center gap-2 mb-3">
-              <SettingsIcon />
-              <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Starter Questions</span>
-              <InfoIcon tooltip="Pre-set questions shown to users when they open the chat" />
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm text-[#737373] dark:text-[#7A9BBF]">Use context-rich Starter Questions</span>
-              <InfoIcon tooltip="Generates dynamic questions from your knowledge base content" />
-              <Toggle checked={state.useContextRichStarters} onChange={(v) => onChange({ useContextRichStarters: v })} />
-              <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] ml-1">{state.useContextRichStarters ? "ON" : "OFF"}</span>
-            </div>
-            <a href="#" className="text-xs text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 mb-3">
-              Learn more
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3.5 8.5l5-5M5 3.5h3.5V7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </a>
-            <button
-              disabled={!state.useContextRichStarters}
-              className="px-3 py-1.5 mb-4 text-xs font-medium rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] text-[#A3A3A3] dark:text-[#7A9BBF] disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-[#FAFAFA] dark:hover:enabled:bg-[#1E3050] transition-colors"
-            >
-              Manage context-rich Starter Questions…
-            </button>
-            <div className="flex flex-col gap-1 mb-2">
-              {state.starterQuestions.map((q, i) => (
-                <div key={i} className="flex items-center gap-2 group">
-                  {editingIndex === i ? (
-                    <input
-                      autoFocus
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => e.key === "Enter" && commitEdit()}
-                      className="flex-1 px-3 py-2 text-sm rounded-lg border border-violet-400 bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900"
-                    />
-                  ) : (
-                    <span className="flex-1 px-3 py-2 text-sm text-[#404040] dark:text-[#C8D8EE] rounded-lg border border-[#F5F5F5] dark:border-[#1E3050] bg-white dark:bg-[#162238]">
-                      {q}
-                    </span>
-                  )}
-                  <button onClick={() => startEdit(i)} className="p-1.5 rounded hover:bg-[#F5F5F5] dark:hover:bg-[#1E3050] text-[#A3A3A3] dark:text-[#7A9BBF] transition-colors">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-                  </button>
-                  <button onClick={() => removeQuestion(i)} className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-red-500 transition-colors">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5h3V3.5M5 5.5v5M9 5.5v5M3.5 3.5l.5 8h6l.5-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newQuestion}
-                onChange={(e) => setNewQuestion(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addQuestion()}
-                placeholder="Enter a sample question here"
-                className="flex-1 px-3.5 py-2.5 text-sm rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#162238] text-[#262626] dark:text-[#C8D8EE] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 placeholder:text-[#A3A3A3] dark:placeholder:text-[#7A9BBF] transition-all"
-              />
-              <button
-                onClick={addQuestion}
-                className="w-9 h-9 rounded-lg border border-[#E5E5E5] dark:border-[#1E3050] flex items-center justify-center text-[#A3A3A3] dark:text-[#7A9BBF] hover:bg-[#FAFAFA] dark:hover:bg-[#1E3050] hover:text-[#525252] dark:hover:text-[#C8D8EE] transition-colors shrink-0"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-            </div>
-          </div>
+      <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] px-5 py-5">
+        <StarterQuestionsSection
+          key={starterTier}
+          questions={state.starterQuestions}
+          onChange={(questions) => onChange({ starterQuestions: questions })}
+          tier={starterTier}
+        />
+      </div>
 
-          {/* Header */}
-          <div className="px-5 py-4">
-            <p className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE] mb-3">Header</p>
-            <TextInput value={state.starterQuestionsHeader} onChange={(v) => onChange({ starterQuestionsHeader: v })} placeholder="e.g. How can I help you?" />
-          </div>
-
-          {/* Expand label */}
-          <div className="px-5 py-4">
+      {/* Header / labels */}
+      <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] divide-y divide-[#E5E5E5] dark:divide-[#1E3050]">
+        <div className="px-5 py-4">
+          <p className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE] mb-3">Header</p>
+          <TextInput value={state.starterQuestionsHeader} onChange={(v) => onChange({ starterQuestionsHeader: v })} placeholder="e.g. How can I help you?" />
+        </div>
+        <div className="px-5 py-4 flex items-start gap-4">
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE] mb-3">Expand label</p>
             <TextInput value={state.starterQuestionsExpand} onChange={(v) => onChange({ starterQuestionsExpand: v })} placeholder="e.g. See more" />
           </div>
-
-          {/* Collapse label */}
-          <div className="px-5 py-4">
+          <StarterPreview mode="expand" />
+        </div>
+        <div className="px-5 py-4 flex items-start gap-4">
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE] mb-3">Collapse label</p>
             <TextInput value={state.starterQuestionsCollapse} onChange={(v) => onChange({ starterQuestionsCollapse: v })} placeholder="e.g. See less" />
           </div>
-
+          <StarterPreview mode="collapse" />
+        </div>
       </div>
 
       {/* ── Chat Interface ────────────────────────────── */}
       <GroupLabel>Chat Interface</GroupLabel>
 
-      <Section label="Placeholder Prompt" info tooltip="Hint text shown inside the chat input before the user types">
-        <TextInput value={state.placeholderPrompt} onChange={(v) => onChange({ placeholderPrompt: v })} placeholder="e.g. Ask me anything…" />
-      </Section>
+      <div className="bg-white dark:bg-[#111D30] rounded-2xl border border-[#E5E5E5] shadow-[0_4px_24px_rgba(23,23,23,0.06)] dark:border-[#1E3050] px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <SettingsIcon />
+          <span className="text-sm font-semibold text-[#404040] dark:text-[#C8D8EE]">Placeholder Prompt</span>
+          <InfoIcon tooltip="Hint text shown inside the chat input before the user types" />
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <TextInput value={state.placeholderPrompt} onChange={(v) => onChange({ placeholderPrompt: v })} placeholder="e.g. Ask me anything…" />
+          </div>
+          <PlaceholderPreview />
+        </div>
+      </div>
 
       <LoadingIndicatorSection state={state} onChange={onChange} />
 
-      <Section label="Custom Message Ending" info tooltip="Text appended after the loading message, e.g. 'please wait...'">
+      <Section label="Custom Message Ending" info tooltip="Text appended after the loading message, e.g. 'please wait...'" description="Text appended to the end of every agent response, e.g. &quot;Please wait…&quot; or a disclaimer.">
         <TextInput value={state.customMessageEnding} onChange={(v) => onChange({ customMessageEnding: v })} placeholder="" />
       </Section>
 
@@ -520,6 +792,11 @@ export default function ConversationSettings({
           onChange={(v) => onChange({ conversationDuration: v })}
         />
       </Section>
+
+      {/* ── Context Depth ─────────────────────────────── */}
+      <GroupLabel>Context Depth</GroupLabel>
+
+      <ContextDepthSection state={state} onChange={onChange} />
 
       {/* Save */}
       <div className="pb-2">
