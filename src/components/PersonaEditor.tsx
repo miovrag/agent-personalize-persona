@@ -331,18 +331,29 @@ export default function PersonaEditor({
           ${mobileView === "settings" ? "flex" : "hidden"} lg:flex`}>
 
           {/* Settings tabs — always visible */}
-          <div className="shrink-0 flex border-b border-[#E5E5E5] dark:border-[#1E3050]">
-            {(["general","persona","conversation","citations","intelligence","advanced","security"] as const).map((tab) => (
+          <div className="shrink-0 flex overflow-x-auto scrollbar-hide border-b border-[#E5E5E5] dark:border-[#1E3050]">
+            {(
+              [
+                { id: "general", icon: <><circle cx="9" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M3.5 15c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "persona", icon: <><rect x="2.5" y="2.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M6 7h6M6 10h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "conversation", icon: <><path d="M13.5 2.5H4.5a2 2 0 00-2 2v6a2 2 0 002 2h1.5l2 2 2-2h3.5a2 2 0 002-2v-6a2 2 0 00-2-2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M5.5 7h7M5.5 9.5h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "citations", icon: <><path d="M5 3.5h8a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H5A1.5 1.5 0 013.5 14V5A1.5 1.5 0 015 3.5z" stroke="currentColor" strokeWidth="1.4"/><path d="M6 7h6M6 9.5h4M6 12h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "intelligence", icon: <><path d="M9 2.5a4.5 4.5 0 014.5 4.5c0 1.8-1 3.3-2.5 4.1V13H7v-1.9C5.5 10.3 4.5 8.8 4.5 7A4.5 4.5 0 019 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 15h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "advanced", icon: <><circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.4"/><path d="M9 2v2M9 14v2M2 9h2M14 9h2M3.93 3.93l1.41 1.41M12.66 12.66l1.41 1.41M3.93 14.07l1.41-1.41M12.66 5.34l1.41-1.41" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "security", icon: <><path d="M9 2L3.5 4.5v4c0 3 2.5 5.5 5.5 6.5 3-1 5.5-3.5 5.5-6.5v-4L9 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M6.5 9l1.5 1.5 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></> },
+              ] as const
+            ).map(({ id, icon }) => (
               <button
-                key={tab}
-                onClick={() => setSettingsTab(tab)}
-                className={`flex-1 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
-                  ${settingsTab === tab
+                key={id}
+                onClick={() => setSettingsTab(id)}
+                className={`shrink-0 md:flex-1 px-3 md:px-1 py-2 flex flex-col items-center gap-1 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
+                  ${settingsTab === id
                     ? "border-violet-600 text-violet-700 dark:text-violet-400"
                     : "border-transparent text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
                   }`}
               >
-                {tab}
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">{icon}</svg>
+                {id}
               </button>
             ))}
           </div>

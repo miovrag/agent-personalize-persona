@@ -240,6 +240,14 @@ html.dark {
   --ds-brand-tint:  rgba(115,103,240,.15);
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Animations ── */
 @keyframes ds-overlay-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ds-overlay-out { from { opacity: 1; } to { opacity: 0; } }
