@@ -130,7 +130,13 @@ export default function PersonaEditor({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isDirty, setIsDirty] = useState(false);
   const [widgetKey, setWidgetKey] = useState(0);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [primaryPersonaGenerating, setPrimaryPersonaGenerating] = useState(false);
+  const [subPersonasGenerating, setSubPersonasGenerating] = useState(false);
+  const [personaUpdated, setPersonaUpdated] = useState(false);
+  const [detailedInputLocked, setDetailedInputLocked] = useState(false);
+  const primaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subGenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [publishConfirm, setPublishConfirm] = useState(false);
   const lastInstructionRef = useRef<{ instruction: string; questions: string[] } | null>(null);
   const [settingsTab, setSettingsTab] = useState<"general" | "persona" | "conversation" | "citations" | "intelligence" | "advanced" | "security">("general");
@@ -171,8 +177,9 @@ export default function PersonaEditor({
     setIsDirty(true);
   }, [state]);
 
+  const hasMountedRef = useRef(false);
+
   const pushToAgent = useCallback(async (personaInstruction: string, questions: string[]) => {
-    setSyncStatus("syncing");
     try {
       await fetch("/api/update-persona", {
         method: "POST",
@@ -182,16 +189,13 @@ export default function PersonaEditor({
           example_questions: questions,
         }),
       });
-      setSyncStatus("synced");
-      setWidgetKey((k) => k + 1);
-      setTimeout(() => setSyncStatus("idle"), 2000);
     } catch {
-      setSyncStatus("error");
-      setTimeout(() => setSyncStatus("idle"), 8000);
+      // silent — generation UI is driven by handleSave timers, not API response
     }
   }, []);
 
   useEffect(() => {
+    if (!hasMountedRef.current) { hasMountedRef.current = true; return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const questions = generateExampleQuestions(state);
     lastInstructionRef.current = { instruction, questions };
@@ -206,6 +210,33 @@ export default function PersonaEditor({
     setSaveState("idle");
   }, []);
 
+  const personaNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startGenerationCycle = () => {
+    if (primaryTimerRef.current) clearTimeout(primaryTimerRef.current);
+    if (subGenTimerRef.current) clearTimeout(subGenTimerRef.current);
+    if (inputLockTimerRef.current) clearTimeout(inputLockTimerRef.current);
+    if (personaNoticeTimerRef.current) clearTimeout(personaNoticeTimerRef.current);
+
+    setPrimaryPersonaGenerating(true);
+    setSubPersonasGenerating(false);
+    setPersonaUpdated(false);
+    setDetailedInputLocked(true);
+
+    inputLockTimerRef.current = setTimeout(() => setDetailedInputLocked(false), 6000);
+
+    personaNoticeTimerRef.current = setTimeout(() => setPersonaUpdated(true), 2000);
+
+    primaryTimerRef.current = setTimeout(() => {
+      setPrimaryPersonaGenerating(false);
+      setSubPersonasGenerating(true);
+
+      subGenTimerRef.current = setTimeout(() => {
+        setSubPersonasGenerating(false);
+      }, 5000);
+    }, 5000);
+  };
+
   const handleSave = () => {
     if (score === 0 && !publishConfirm) {
       setPublishConfirm(true);
@@ -213,9 +244,14 @@ export default function PersonaEditor({
     }
     setPublishConfirm(false);
     setSaveState("saving");
+    startGenerationCycle();
+    if (lastInstructionRef.current) {
+      pushToAgent(lastInstructionRef.current.instruction, lastInstructionRef.current.questions);
+    }
     setTimeout(() => {
       setSaveState("saved");
       setIsDirty(false);
+      setWidgetKey((k) => k + 1);
       setTimeout(() => setSaveState("idle"), 2500);
     }, 800);
   };
@@ -292,7 +328,7 @@ export default function PersonaEditor({
           ) : (
             <button
               onClick={handleSave}
-              disabled={saveState === "saving"}
+              disabled={saveState === "saving" || primaryPersonaGenerating || subPersonasGenerating}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${saveBg} disabled:opacity-70`}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -412,14 +448,20 @@ export default function PersonaEditor({
                     <textarea
                       value={state.additionalInstructions}
                       onChange={(e) => updateState({ additionalInstructions: e.target.value })}
+                      disabled={detailedInputLocked}
                       rows={10}
                       placeholder="e.g. Always greet users by name if known. When unsure, ask a clarifying question before answering..."
-                      className="w-full px-3 py-3 text-sm rounded-xl border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none leading-relaxed text-[#404040] dark:text-[#C8D8EE] placeholder:text-[#C0C0C0] dark:placeholder:text-[#3A5070]"
+                      className="w-full px-3 py-3 text-sm rounded-xl border border-[#E5E5E5] dark:border-[#1E3050] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 bg-white dark:bg-[#162238] resize-none leading-relaxed text-[#404040] dark:text-[#C8D8EE] placeholder:text-[#C0C0C0] dark:placeholder:text-[#3A5070] disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
                   {/* Expert Mode */}
-                  <ExpertModeSection state={state} onChange={updateState} />
+                  <ExpertModeSection
+                    state={state}
+                    onChange={updateState}
+                    primaryPersonaGenerating={primaryPersonaGenerating}
+                    subPersonasGenerating={subPersonasGenerating}
+                  />
 
                   {/* Bottom CTA */}
                   <div className="flex items-center gap-3 pt-2 pb-6">
@@ -485,6 +527,7 @@ export default function PersonaEditor({
           {/* Preview Chat */}
           <div className={`flex-1 min-h-0 overflow-hidden ${rightView === "preview" ? "flex flex-col" : "hidden"}`}>
             <LivePreview
+              key={widgetKey}
               agentName={state.agentName}
               agentColor={state.agentColor}
               agentStyle={state.agentStyle}
@@ -505,13 +548,22 @@ export default function PersonaEditor({
               loadingCustomMessage={state.loadingCustomMessage}
               outputStyle={state.outputStyle}
               markdownInResponses={state.markdownInResponses}
+              personaUpdated={personaUpdated}
+              onDismissPersonaUpdate={() => setPersonaUpdated(false)}
+              onStartNewConversation={() => setPersonaUpdated(false)}
             />
           </div>
 
           {/* Instructions (BuilderChat) */}
           <div className={`flex-1 flex-col overflow-hidden ${rightView === "instructions" ? "flex" : "hidden"}`}>
             <div className="flex-1 flex flex-col overflow-hidden">
-              <BuilderChat state={state} onApply={(patch) => updateState(patch)} />
+              <BuilderChat
+              state={state}
+              onApply={(patch) => updateState(patch)}
+              personaUpdated={personaUpdated}
+              onDismissPersonaUpdate={() => setPersonaUpdated(false)}
+              onStartNewConversation={() => setPersonaUpdated(false)}
+            />
             </div>
           </div>
 

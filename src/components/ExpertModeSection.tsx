@@ -1,19 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { PersonaState } from "./types";
 import { SYSTEM_SECTIONS, getSystemSectionContent } from "./generateInstruction";
 
 interface Props {
   state: PersonaState;
   onChange: (patch: Partial<PersonaState>) => void;
+  primaryPersonaGenerating?: boolean;
+  subPersonasGenerating?: boolean;
 }
 
-export default function ExpertModeSection({ state, onChange }: Props) {
+const PRIMARY_STATUSES = [
+  "Reading your persona settings…",
+  "Analyzing tone and role…",
+  "Calibrating behavior rules…",
+  "Finalizing primary persona…",
+];
+
+const SUB_STATUSES = [
+  "Drafting Role & Scope…",
+  "Tuning communication style…",
+  "Building behavior guardrails…",
+  "Setting output format…",
+  "Applying finishing touches…",
+];
+
+function SpinnerIcon({ size = 12, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"
+      style={{ animation: "expert-spin 0.9s linear infinite", flexShrink: 0 }}>
+      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+    </svg>
+  );
+}
+
+
+export default function ExpertModeSection({ state, onChange, primaryPersonaGenerating, subPersonasGenerating }: Props) {
   const [open, setOpen] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [statusIdx, setStatusIdx] = useState(0);
+  const isGenerating = primaryPersonaGenerating || subPersonasGenerating;
+  const statuses = primaryPersonaGenerating ? PRIMARY_STATUSES : SUB_STATUSES;
+
+  useEffect(() => {
+    if (!isGenerating) { setStatusIdx(0); return; }
+    setStatusIdx(0);
+    const iv = setInterval(() => setStatusIdx((i) => (i + 1) % statuses.length), 1800);
+    return () => clearInterval(iv);
+  }, [isGenerating, statuses.length]);
 
   const overrides = state.subInstructionOverrides ?? {};
   const customizedCount = Object.keys(overrides).length;
@@ -44,6 +81,12 @@ export default function ExpertModeSection({ state, onChange }: Props) {
   return (
     <div className="ds-section-card" style={{ borderRadius: "var(--ds-radius-xl)" }}>
 
+      <style>{`
+        @keyframes expert-spin { to { transform: rotate(360deg); } }
+        @keyframes expert-fade { 0%,100%{opacity:0;transform:translateY(3px)} 15%,85%{opacity:1;transform:translateY(0)} }
+        .expert-status-text { animation: expert-fade 1.8s ease-in-out; }
+      `}</style>
+
       {/* Accordion header */}
       <button
         onClick={() => setOpen((v) => !v)}
@@ -53,9 +96,9 @@ export default function ExpertModeSection({ state, onChange }: Props) {
           cursor: "pointer", fontFamily: "inherit",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <i className="ti ti-alert-triangle" style={{ fontSize: 16, color: "var(--ds-error)", flexShrink: 0 }} />
-          <span style={{ fontSize: "var(--ds-text-sm)", fontWeight: "var(--ds-fw-semibold)", color: "var(--ds-text-h)" }}>
+          <span style={{ fontSize: "var(--ds-text-sm)", fontWeight: "var(--ds-fw-semibold)", color: "var(--ds-text-h)", flexShrink: 0 }}>
             Expert Mode
           </span>
           {customizedCount > 0 ? (
@@ -80,6 +123,17 @@ export default function ExpertModeSection({ state, onChange }: Props) {
       {/* Accordion body */}
       {open && (
         <div style={{ borderTop: "1px solid var(--ds-border)" }}>
+
+          {/* Generation status — only visible to experts who opened the accordion */}
+          {isGenerating && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderBottom: "1px solid var(--ds-border)" }}>
+              <SpinnerIcon size={11} color="var(--ds-text-muted)" />
+              <span key={statusIdx} className="expert-status-text" style={{ fontSize: 11, color: "var(--ds-text-muted)" }}>
+                {statuses[statusIdx]}
+              </span>
+            </div>
+          )}
+
 
           {/* Danger zone warning */}
           {!warningAccepted && (
@@ -129,6 +183,7 @@ export default function ExpertModeSection({ state, onChange }: Props) {
                   <div
                     key={key}
                     className={`ds-section-card${isOverridden ? " is-customized" : ""}`}
+                    style={{ opacity: primaryPersonaGenerating ? 0.45 : 1, pointerEvents: primaryPersonaGenerating ? "none" : "auto", transition: "opacity 0.3s" }}
                   >
                     <div className="ds-section-card-header">
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -142,14 +197,23 @@ export default function ExpertModeSection({ state, onChange }: Props) {
                       </div>
                       {!isEditing && (
                         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                          {isOverridden && (
-                            <button className="ds-action-link ds-action-link-muted" onClick={() => resetSection(key)}>
-                              Reset to system
-                            </button>
+                          {subPersonasGenerating ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <SpinnerIcon size={12} color="var(--ds-text-muted)" />
+                              <span style={{ fontSize: "var(--ds-text-xs)", color: "var(--ds-text-muted)" }}>Generating</span>
+                            </div>
+                          ) : (
+                            <>
+                              {isOverridden && (
+                                <button className="ds-action-link ds-action-link-muted" onClick={() => resetSection(key)}>
+                                  Reset to system
+                                </button>
+                              )}
+                              <button className="ds-action-link ds-action-link-primary" onClick={() => startEdit(key)}>
+                                Edit
+                              </button>
+                            </>
                           )}
-                          <button className="ds-action-link ds-action-link-primary" onClick={() => startEdit(key)}>
-                            Edit
-                          </button>
                         </div>
                       )}
                     </div>

@@ -38,6 +38,9 @@ const INDICATOR_OPTIONS: { id: TypingStyle; label: string; desc: string }[] = [
 const KEYFRAMES_ACTIVITY = `
 @keyframes lp-fade-in  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes lp-fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-4px); } }
+@keyframes lp-reload        { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes lp-flash-move    { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@keyframes lp-flash-fade    { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
 `;
 
 const KEYFRAMES = `${KEYFRAMES_ACTIVITY}
@@ -148,6 +151,9 @@ interface LivePreviewProps {
   starterQuestionsCollapse?: string;
   outputStyle?: string;
   markdownInResponses?: "enabled" | "disabled";
+  personaUpdated?: boolean;
+  onDismissPersonaUpdate?: () => void;
+  onStartNewConversation?: () => void;
 }
 
 export default function LivePreview({
@@ -168,7 +174,20 @@ export default function LivePreview({
   starterQuestionsCollapse = "",
   outputStyle = "",
   markdownInResponses = "enabled",
+  personaUpdated,
+  onDismissPersonaUpdate,
+  onStartNewConversation,
 }: LivePreviewProps) {
+  const [personaNoticeDismissed, setPersonaNoticeDismissed] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (personaUpdated) {
+      setPersonaNoticeDismissed(false);
+      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    }
+  }, [personaUpdated]);
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activityEditorOpen, setActivityEditorOpen] = useState(false);
   const [suggestionsExpanded, setSuggestionsExpanded] = useState(false);
@@ -354,7 +373,8 @@ export default function LivePreview({
   return (
     <>
       <style>{KEYFRAMES}</style>
-      <div className="flex flex-col h-full overflow-hidden border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#111D30] shadow-sm" style={{ borderRadius: agentStyle === "sharp" ? "4px" : agentStyle === "soft" ? "16px" : "24px" }}>
+      <div className="relative flex flex-col h-full overflow-hidden border border-[#E5E5E5] dark:border-[#1E3050] bg-white dark:bg-[#111D30] shadow-sm" style={{ borderRadius: agentStyle === "sharp" ? "4px" : agentStyle === "soft" ? "16px" : "24px", animation: "lp-reload 0.3s ease-out both" }}>
+
         {/* Header */}
         <div
           className={`px-4 py-3 flex items-center justify-between shrink-0 ${Object.keys(bgStyle).length === 0 ? "bg-[#FAFAFA] dark:bg-[#0B1426]" : ""}`}
@@ -373,9 +393,18 @@ export default function LivePreview({
 
         {/* Chat area */}
         <div
-          className={`flex-1 overflow-y-auto p-4 space-y-3 ${Object.keys(bgStyle).length === 0 ? "bg-[#FAFAFA] dark:bg-[#0B1426]" : ""}`}
+          className={`relative flex-1 overflow-y-auto p-4 space-y-3 ${Object.keys(bgStyle).length === 0 ? "bg-[#FAFAFA] dark:bg-[#0B1426]" : ""}`}
           style={{ fontFamily: fontStack, ...bgStyle }}
         >
+          {/* Moving flash — scoped to chat background only */}
+          <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 20, animation: "lp-flash-fade 3s ease-out both" }}>
+            <div style={{
+              position: "absolute", top: 0, left: 0, width: "35%", height: "100%",
+              background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.15) 35%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0.15) 65%, transparent 100%)",
+              animation: "lp-flash-move 0.9s cubic-bezier(0.4,0,0.2,1) infinite",
+            }} />
+          </div>
+
           {/* Greeting bubble */}
           <div className="flex gap-2.5">
             <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color, fontFamily: "Roboto, system-ui, sans-serif" }}>
@@ -494,6 +523,36 @@ export default function LivePreview({
               </button>
             )}
           </div>
+
+          {/* Persona updated — white agent-bubble style notice */}
+          {personaUpdated && !personaNoticeDismissed && (
+            <div style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/>
+                </svg>
+                <div>
+                  <p style={{ font: "600 13px/18px Inter,system-ui", color: "#171717", margin: "0 0 3px" }}>New persona is available</p>
+                  <p style={{ font: "400 12px/17px Inter,system-ui", color: "#525252", margin: 0 }}>This conversation started on an older persona. New messages will use the new persona, which may behave differently. For the best experience, start a new conversation.</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, paddingLeft: 28 }}>
+                <button
+                  onClick={() => { setPersonaNoticeDismissed(true); onStartNewConversation?.(); }}
+                  style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#fff", background: color, border: "none", cursor: "pointer" }}
+                >
+                  Start new conversation
+                </button>
+                <button
+                  onClick={() => { setPersonaNoticeDismissed(true); onDismissPersonaUpdate?.(); }}
+                  style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 500, color: "#737373", background: "transparent", border: "1px solid #E5E5E5", cursor: "pointer" }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+          <div ref={chatBottomRef} />
         </div>
 
         {/* Input bar — floats on the chat background */}

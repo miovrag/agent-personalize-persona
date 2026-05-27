@@ -25,6 +25,9 @@ interface Message {
 interface Props {
   state: PersonaState;
   onApply: (patch: Partial<PersonaState>) => void;
+  personaUpdated?: boolean;
+  onDismissPersonaUpdate?: () => void;
+  onStartNewConversation?: () => void;
 }
 
 // ─── Suggestions metadata ─────────────────────────────────────────────────────
@@ -360,7 +363,7 @@ let _followUpS: string[] | null = null;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function BuilderChat({ state, onApply }: Props) {
+export default function BuilderChat({ state, onApply, personaUpdated, onDismissPersonaUpdate, onStartNewConversation }: Props) {
   const [messages, setMessages] = useState<Message[]>(() => [..._msgs]);
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<Attachment[]>([]);
@@ -376,6 +379,11 @@ export default function BuilderChat({ state, onApply }: Props) {
   const [followUpSuggestions, setFollowUpSuggestions] = useState<string[] | null>(() => _followUpS);
   const [phIndex, setPhIndex] = useState(0);
   const [phVisible, setPhVisible] = useState(true);
+  const [personaNoticeDismissed, setPersonaNoticeDismissed] = useState(false);
+
+  useEffect(() => {
+    if (personaUpdated) setPersonaNoticeDismissed(false);
+  }, [personaUpdated]);
 
   // Sync to module store so history survives tab switches / remounts
   useEffect(() => { _msgs = messages; }, [messages]);
@@ -857,6 +865,40 @@ export default function BuilderChat({ state, onApply }: Props) {
         </>
         )}
       </div>
+
+      {/* Persona updated notice */}
+      {personaUpdated && !isEmptyState && !personaNoticeDismissed && (
+        <div className="shrink-0 mx-4 mb-2 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 p-3 flex flex-col gap-2">
+          <div>
+            <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-0.5">New persona is available</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+              This conversation started on an older persona. New messages will use the new persona, which may behave differently. For the best experience, start a new conversation.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                _msgs = [INIT_MESSAGE];
+                _followUpQ = null;
+                _followUpS = null;
+                setMessages([INIT_MESSAGE]);
+                setFollowUpQuestion(null);
+                setFollowUpSuggestions(null);
+                onStartNewConversation?.();
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+            >
+              Start new conversation
+            </button>
+            <button
+              onClick={() => { setPersonaNoticeDismissed(true); onDismissPersonaUpdate?.(); }}
+              className="px-2.5 py-1 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bottom dock — suggestions + input share a 2-col grid so card width = input width */}
       <div className="shrink-0 px-4">
