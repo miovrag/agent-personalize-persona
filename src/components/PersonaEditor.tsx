@@ -130,6 +130,7 @@ export default function PersonaEditor({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isDirty, setIsDirty] = useState(false);
   const [widgetKey, setWidgetKey] = useState(0);
+  const [showDemoConversation, setShowDemoConversation] = useState(true);
   const [primaryPersonaGenerating, setPrimaryPersonaGenerating] = useState(false);
   const [subPersonasGenerating, setSubPersonasGenerating] = useState(false);
   const [personaUpdated, setPersonaUpdated] = useState(false);
@@ -143,6 +144,7 @@ export default function PersonaEditor({
   const [mobileView, setMobileView] = useState<"settings" | "preview">("settings");
   const [rightView, setRightView] = useState<"preview" | "instructions">("preview");
   const [rightWidth, setRightWidth] = useState(380);
+  const settingsScrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(380);
@@ -251,6 +253,7 @@ export default function PersonaEditor({
     setTimeout(() => {
       setSaveState("saved");
       setIsDirty(false);
+      setShowDemoConversation(true);
       setWidgetKey((k) => k + 1);
       setTimeout(() => setSaveState("idle"), 2500);
     }, 800);
@@ -381,8 +384,8 @@ export default function PersonaEditor({
             ).map(({ id, icon }) => (
               <button
                 key={id}
-                onClick={() => setSettingsTab(id)}
-                className={`shrink-0 md:flex-1 px-3 md:px-1 py-2 flex flex-col items-center gap-1 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
+                onClick={() => { setSettingsTab(id); settingsScrollRef.current?.scrollTo({ top: 0 }); }}
+                className={`shrink-0 md:flex-1 px-3 md:px-2 py-2 flex flex-row items-center gap-1.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
                   ${settingsTab === id
                     ? "border-violet-600 text-violet-700 dark:text-violet-400"
                     : "border-transparent text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
@@ -395,7 +398,7 @@ export default function PersonaEditor({
           </div>
 
           {/* Settings content — always visible */}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={settingsScrollRef} className="flex-1 overflow-y-auto">
             <div className="w-full max-w-[640px] mx-auto">
 
               {/* General tab */}
@@ -510,7 +513,7 @@ export default function PersonaEditor({
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all capitalize
                     ${rightView === view
                       ? "bg-white dark:bg-[#111D30] text-[#262626] dark:text-[#C8D8EE] shadow-sm"
-                      : "text-[#A3A3A3] dark:text-[#7A9BBF] hover:text-[#525252] dark:hover:text-[#C8D8EE]"
+                      : "text-[#737373] dark:text-[#7A9BBF] hover:text-[#262626] dark:hover:text-[#C8D8EE]"
                     }`}
                 >
                   {view === "preview" ? "Preview Chat" : (
@@ -549,8 +552,9 @@ export default function PersonaEditor({
               outputStyle={state.outputStyle}
               markdownInResponses={state.markdownInResponses}
               personaUpdated={personaUpdated}
+              showDemoConversation={showDemoConversation}
               onDismissPersonaUpdate={() => setPersonaUpdated(false)}
-              onStartNewConversation={() => setPersonaUpdated(false)}
+              onStartNewConversation={() => { setPersonaUpdated(false); setShowDemoConversation(false); setWidgetKey((k) => k + 1); }}
             />
           </div>
 

@@ -39,7 +39,7 @@ const KEYFRAMES_ACTIVITY = `
 @keyframes lp-fade-in  { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes lp-fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-4px); } }
 @keyframes lp-reload        { 0% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes lp-flash-move    { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@keyframes lp-flash-move    { 0% { transform: translateY(-100%); opacity: 0; } 50% { transform: translateY(200%); opacity: 1; } 100% { transform: translateY(-100%); opacity: 0; } }
 @keyframes lp-flash-fade    { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
 `;
 
@@ -154,6 +154,7 @@ interface LivePreviewProps {
   personaUpdated?: boolean;
   onDismissPersonaUpdate?: () => void;
   onStartNewConversation?: () => void;
+  showDemoConversation?: boolean;
 }
 
 export default function LivePreview({
@@ -177,8 +178,11 @@ export default function LivePreview({
   personaUpdated,
   onDismissPersonaUpdate,
   onStartNewConversation,
+  showDemoConversation = true,
 }: LivePreviewProps) {
   const [personaNoticeDismissed, setPersonaNoticeDismissed] = useState(false);
+  const [responseReady, setResponseReady] = useState(false);
+  const [flashDone, setFlashDone] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -187,6 +191,14 @@ export default function LivePreview({
       setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }, [personaUpdated]);
+
+  useEffect(() => {
+    setFlashDone(false);
+    setResponseReady(false);
+    const t1 = setTimeout(() => setFlashDone(true), 3000);
+    const t2 = setTimeout(() => setResponseReady(true), 3000 + 1800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activityEditorOpen, setActivityEditorOpen] = useState(false);
@@ -389,6 +401,16 @@ export default function LivePreview({
               <p className="text-xs" style={{ color: headerFg, opacity: 0.6 }}>Live preview</p>
             </div>
           </div>
+          <button
+            onClick={() => onStartNewConversation?.()}
+            title="New chat"
+            className="p-1.5 rounded-lg transition-colors hover:bg-black/10"
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ color: headerFg, opacity: 0.7 }}>
+              <path d="M2 7.5C2 4.46 4.46 2 7.5 2s5.5 2.46 5.5 5.5S10.54 13 7.5 13H2.5L2 12.5V7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+              <path d="M5 7.5h5M7.5 5v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
 
         {/* Chat area */}
@@ -399,14 +421,16 @@ export default function LivePreview({
           {/* Moving flash — scoped to chat background only */}
           <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 20, animation: "lp-flash-fade 3s ease-out both" }}>
             <div style={{
-              position: "absolute", top: 0, left: 0, width: "35%", height: "100%",
-              background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.15) 35%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0.15) 65%, transparent 100%)",
-              animation: "lp-flash-move 0.9s cubic-bezier(0.4,0,0.2,1) infinite",
+              position: "absolute", top: 0, left: 0, width: "100%", height: "50%",
+              background: "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
+              filter: "blur(18px)",
+              animation: "lp-flash-move 2.4s cubic-bezier(0.4,0,0.2,1) infinite",
             }} />
           </div>
 
-          {/* Greeting bubble */}
-          <div className="flex gap-2.5">
+          {/* Greeting bubble + demo — hidden while flash animation is active */}
+          {flashDone && <>
+          <div className="flex gap-2.5" style={{ animation: "lp-fade-in 0.4s ease-out both" }}>
             <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color, fontFamily: "Roboto, system-ui, sans-serif" }}>
               {avatarNode}
             </div>
@@ -417,41 +441,7 @@ export default function LivePreview({
             </div>
           </div>
 
-          {/* Suggestion chips */}
-          <div className="ml-9 space-y-1.5">
-            {starterQuestionsHeader || suggestions.length > 0 ? (
-              <p className="text-[10px] font-semibold text-[#A3A3A3] dark:text-[#7A9BBF] uppercase tracking-wide mb-1.5">
-                {starterQuestionsHeader || "How can I help you?"}
-              </p>
-            ) : null}
-            {visibleSuggestions.map((s, i) => (
-              <button
-                key={i}
-                className={`block w-full text-left text-xs px-3 py-2 ${r.chip} bg-white dark:bg-[#111D30] border border-[#E5E5E5] dark:border-[#1E3050] text-[#525252] dark:text-[#C8D8EE] hover:bg-[#FAFAFA] dark:hover:bg-[#162238] transition-colors truncate`}
-                style={{ borderLeftColor: color, borderLeftWidth: "2px" }}
-              >
-                {s}
-              </button>
-            ))}
-            {canExpand && (
-              <button
-                onClick={() => setSuggestionsExpanded((v) => !v)}
-                className="flex items-center gap-1 text-[10px] font-medium transition-colors mt-0.5"
-                style={{ color }}
-              >
-                <svg
-                  width="10" height="10" viewBox="0 0 10 10" fill="none"
-                  className={`transition-transform duration-200 ${suggestionsExpanded ? "rotate-180" : ""}`}
-                >
-                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {suggestionsExpanded
-                  ? (starterQuestionsCollapse || "See less")
-                  : (starterQuestionsExpand || "See more")}
-              </button>
-            )}
-          </div>
-
+          {showDemoConversation && <>
           {/* User message */}
           <div className="flex justify-end">
             <div className={`${r.bubbleUser} px-3.5 py-2.5 max-w-[75%] text-white text-sm`} style={{ backgroundColor: color }}>
@@ -459,22 +449,16 @@ export default function LivePreview({
             </div>
           </div>
 
-          {/* Agent response */}
+          {/* Agent response — loading indicator while typing, response when ready */}
           <div className="flex gap-2.5">
             <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color, fontFamily: "Roboto, system-ui, sans-serif" }}>
               {avatarNode}
             </div>
-            <div className={`bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] dark:border-[#1E3050] max-w-[85%]`}>
-              {buildSampleResponse()}
-            </div>
-          </div>
-
-          {/* Typing / loading indicator */}
-          <div className="flex gap-2.5">
-            <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color, fontFamily: "Roboto, system-ui, sans-serif" }}>
-              {avatarNode}
-            </div>
-            {loadingIndicator === "background-activity" ? (
+            {responseReady ? (
+              <div className={`bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] dark:border-[#1E3050] max-w-[85%]`} style={{ animation: "lp-fade-in 0.3s ease-out both" }}>
+                {buildSampleResponse()}
+              </div>
+            ) : loadingIndicator === "background-activity" ? (
               <button
                 onClick={() => setActivityEditorOpen(true)}
                 title="Click to edit activity messages"
@@ -483,25 +467,15 @@ export default function LivePreview({
                 onMouseEnter={(e) => { if (!activityEditorOpen) (e.currentTarget as HTMLElement).style.borderColor = `${color}80`; }}
                 onMouseLeave={(e) => { if (!activityEditorOpen) (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: color, animation: "lp-pulse-dot 1.5s ease-in-out infinite" }}
-                />
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color, animation: "lp-pulse-dot 1.5s ease-in-out infinite" }} />
                 {backgroundActivityMessages.length > 0 ? (
-                  <span
-                    className="text-xs text-[#737373] dark:text-[#7A9BBF] whitespace-nowrap"
-                    style={{
-                      animation: activityVisible ? "lp-fade-in 0.3s ease forwards" : "lp-fade-out 0.25s ease forwards",
-                    }}
-                  >
+                  <span className="text-xs text-[#737373] dark:text-[#7A9BBF] whitespace-nowrap" style={{ animation: activityVisible ? "lp-fade-in 0.3s ease forwards" : "lp-fade-out 0.25s ease forwards" }}>
                     {backgroundActivityMessages[activityIdx % backgroundActivityMessages.length]}
                   </span>
                 ) : (
                   <span className="text-xs text-[#A3A3A3] dark:text-[#7A9BBF] italic">Add messages…</span>
                 )}
-                <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Click to edit
-                </span>
+                <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Click to edit</span>
               </button>
             ) : loadingIndicator === "custom-message" ? (
               <div className={`bg-white dark:bg-[#111D30] ${r.bubble} px-3.5 py-2.5 shadow-sm border border-[#F5F5F5] dark:border-[#1E3050]`}>
@@ -517,15 +491,14 @@ export default function LivePreview({
                 onMouseLeave={(e) => { if (!pickerOpen) (e.currentTarget as HTMLElement).style.borderColor = "transparent"; }}
               >
                 <TypingIndicator style={typingIndicatorStyle} color={color} />
-                <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Click to change
-                </span>
+                <span className="absolute -top-6 left-0 text-[9px] font-medium text-[#A3A3A3] dark:text-[#7A9BBF] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Click to change</span>
               </button>
             )}
           </div>
+          </>}
 
           {/* Persona updated — white agent-bubble style notice */}
-          {personaUpdated && !personaNoticeDismissed && (
+          {personaUpdated && !personaNoticeDismissed && responseReady && (
             <div style={{ background: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
@@ -552,6 +525,7 @@ export default function LivePreview({
               </div>
             </div>
           )}
+          </>}
           <div ref={chatBottomRef} />
         </div>
 
