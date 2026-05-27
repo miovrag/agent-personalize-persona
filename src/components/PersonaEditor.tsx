@@ -14,6 +14,7 @@ import CitationsSettings from "./CitationsSettings";
 import IntelligenceSettings from "./IntelligenceSettings";
 import AdvancedSettings from "./AdvancedSettings";
 import SecuritySettings from "./SecuritySettings";
+import LiveChatSettings from "./LiveChatSettings";
 
 const DEFAULT_STATE: PersonaState = {
   agentName: "My Agent",
@@ -109,6 +110,22 @@ const DEFAULT_STATE: PersonaState = {
   subInstructionOverrides: {},
   contextDepth: "balanced",
   contextDepthEnabled: true,
+  liveChatEnabled: false,
+  liveChatPosition: "bottom-right",
+  liveChatLauncherStyle: "bubble",
+  liveChatGreeting: "",
+  liveChatNotificationBadge: true,
+  liveChatSound: false,
+  liveChatAvailability: "always",
+  liveChatOfflineMessage: "",
+  liveChatLeadCapture: false,
+  liveChatLeadFields: ["email"],
+  liveChatPrivacyNotice: false,
+  liveChatPrivacyUrl: "",
+  liveChatEmailTranscript: false,
+  liveChatHumanHandoff: false,
+  liveChatHandoffTrigger: "",
+  liveChatHandoffEmail: "",
 };
 
 type SaveState = "idle" | "saving" | "saved";
@@ -140,7 +157,7 @@ export default function PersonaEditor({
   const inputLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [publishConfirm, setPublishConfirm] = useState(false);
   const lastInstructionRef = useRef<{ instruction: string; questions: string[] } | null>(null);
-  const [settingsTab, setSettingsTab] = useState<"general" | "persona" | "conversation" | "citations" | "intelligence" | "advanced" | "security">("general");
+  const [settingsTab, setSettingsTab] = useState<"general" | "persona" | "conversation" | "citations" | "intelligence" | "advanced" | "security" | "livechat">("general");
   const [mobileView, setMobileView] = useState<"settings" | "preview">("settings");
   const [rightView, setRightView] = useState<"preview" | "instructions">("preview");
   const [rightWidth, setRightWidth] = useState(380);
@@ -373,26 +390,27 @@ export default function PersonaEditor({
           <div className="shrink-0 flex overflow-x-auto scrollbar-hide border-b border-[#E5E5E5] dark:border-[#1E3050]">
             {(
               [
-                { id: "general", icon: <><circle cx="9" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M3.5 15c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
-                { id: "persona", icon: <><rect x="2.5" y="2.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M6 7h6M6 10h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
-                { id: "conversation", icon: <><path d="M13.5 2.5H4.5a2 2 0 00-2 2v6a2 2 0 002 2h1.5l2 2 2-2h3.5a2 2 0 002-2v-6a2 2 0 00-2-2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M5.5 7h7M5.5 9.5h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
-                { id: "citations", icon: <><path d="M5 3.5h8a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H5A1.5 1.5 0 013.5 14V5A1.5 1.5 0 015 3.5z" stroke="currentColor" strokeWidth="1.4"/><path d="M6 7h6M6 9.5h4M6 12h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
-                { id: "intelligence", icon: <><path d="M9 2.5a4.5 4.5 0 014.5 4.5c0 1.8-1 3.3-2.5 4.1V13H7v-1.9C5.5 10.3 4.5 8.8 4.5 7A4.5 4.5 0 019 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 15h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
-                { id: "advanced", icon: <><circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.4"/><path d="M9 2v2M9 14v2M2 9h2M14 9h2M3.93 3.93l1.41 1.41M12.66 12.66l1.41 1.41M3.93 14.07l1.41-1.41M12.66 5.34l1.41-1.41" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
-                { id: "security", icon: <><path d="M9 2L3.5 4.5v4c0 3 2.5 5.5 5.5 6.5 3-1 5.5-3.5 5.5-6.5v-4L9 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M6.5 9l1.5 1.5 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></> },
+                { id: "general",      label: "General",      icon: <><circle cx="9" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M3.5 15c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "persona",      label: "Persona",      icon: <><rect x="2.5" y="2.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M6 7h6M6 10h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "conversation", label: "Conversation", icon: <><path d="M13.5 2.5H4.5a2 2 0 00-2 2v6a2 2 0 002 2h1.5l2 2 2-2h3.5a2 2 0 002-2v-6a2 2 0 00-2-2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M5.5 7h7M5.5 9.5h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "citations",    label: "Citations",    icon: <><path d="M5 3.5h8a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H5A1.5 1.5 0 013.5 14V5A1.5 1.5 0 015 3.5z" stroke="currentColor" strokeWidth="1.4"/><path d="M6 7h6M6 9.5h4M6 12h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "intelligence", label: "Intelligence", icon: <><path d="M9 2.5a4.5 4.5 0 014.5 4.5c0 1.8-1 3.3-2.5 4.1V13H7v-1.9C5.5 10.3 4.5 8.8 4.5 7A4.5 4.5 0 019 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 15h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "advanced",     label: "Advanced",     icon: <><circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.4"/><path d="M9 2v2M9 14v2M2 9h2M14 9h2M3.93 3.93l1.41 1.41M12.66 12.66l1.41 1.41M3.93 14.07l1.41-1.41M12.66 5.34l1.41-1.41" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></> },
+                { id: "security",     label: "Security",     icon: <><path d="M9 2L3.5 4.5v4c0 3 2.5 5.5 5.5 6.5 3-1 5.5-3.5 5.5-6.5v-4L9 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M6.5 9l1.5 1.5 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></> },
+                { id: "livechat",     label: "Live Chat",    icon: <><path d="M14.5 2H3.5a2 2 0 00-2 2v7a2 2 0 002 2h2l3 3 3-3h3a2 2 0 002-2V4a2 2 0 00-2-2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><circle cx="15" cy="3" r="2.2" fill="#10B981" stroke="white" strokeWidth="0.75"/></> },
               ] as const
-            ).map(({ id, icon }) => (
+            ).map(({ id, label, icon }) => (
               <button
                 key={id}
                 onClick={() => { setSettingsTab(id); settingsScrollRef.current?.scrollTo({ top: 0 }); }}
-                className={`shrink-0 md:flex-1 px-3 md:px-2 py-2 flex flex-row items-center gap-1.5 text-xs font-medium whitespace-nowrap border-b-2 capitalize transition-colors
+                className={`shrink-0 md:flex-1 px-3 md:px-2 py-2 flex flex-row items-center gap-1.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors
                   ${settingsTab === id
                     ? "border-violet-600 text-violet-700 dark:text-violet-400"
                     : "border-transparent text-[#737373] dark:text-[#7A9BBF] hover:text-[#404040] dark:hover:text-[#C8D8EE]"
                   }`}
               >
                 <svg width="16" height="16" viewBox="0 0 18 18" fill="none">{icon}</svg>
-                {id}
+                {label}
               </button>
             ))}
           </div>
@@ -429,6 +447,11 @@ export default function PersonaEditor({
               {/* Security tab */}
               {settingsTab === "security" && (
                 <SecuritySettings state={state} onChange={updateState} onSave={handleSave} />
+              )}
+
+              {/* Live Chat tab */}
+              {settingsTab === "livechat" && (
+                <LiveChatSettings state={state} onChange={updateState} onSave={handleSave} />
               )}
 
               {/* Persona tab */}

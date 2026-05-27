@@ -93,6 +93,23 @@ export interface PersonaState {
   // Context Depth
   contextDepth: string;
   contextDepthEnabled: boolean;
+  // Live Chat tab
+  liveChatEnabled: boolean;
+  liveChatPosition: "bottom-right" | "bottom-left";
+  liveChatLauncherStyle: "bubble" | "bar" | "text";
+  liveChatGreeting: string;
+  liveChatNotificationBadge: boolean;
+  liveChatSound: boolean;
+  liveChatAvailability: "always" | "schedule" | "manual";
+  liveChatOfflineMessage: string;
+  liveChatLeadCapture: boolean;
+  liveChatLeadFields: string[];
+  liveChatPrivacyNotice: boolean;
+  liveChatPrivacyUrl: string;
+  liveChatEmailTranscript: boolean;
+  liveChatHumanHandoff: boolean;
+  liveChatHandoffTrigger: string;
+  liveChatHandoffEmail: string;
 }
 
 export const AGENT_ROLE_OPTIONS = [
